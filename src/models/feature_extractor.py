@@ -19,7 +19,6 @@ class ResNet50FeatureExtractor(nn.Module):
         resnet = models.resnet50(pretrained=pretrained)
 
         # Remover la capa de clasificación final
-        # ResNet50 tiene: conv1, bn1, relu, maxpool, layer1-4, avgpool, fc
         # Queremos todo excepto fc
         self.features = nn.Sequential(*list(resnet.children())[:-1])
         

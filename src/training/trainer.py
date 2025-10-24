@@ -179,7 +179,7 @@ class Trainer:
             on_epoch_start: Optional callback called at the start of each epoch with epoch number
             on_epoch_end: Optional callback called at the end of each epoch with epoch number and metrics
         """
-        print(f"\nStarting training for {num_epochs} epochs...")
+        print(f"\nStarting training for {num_epochs} epochs")
         print(f"Early stopping patience: {early_stopping_patience}")
         
         patience_counter = 0

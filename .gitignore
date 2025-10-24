@@ -3,3 +3,5 @@ env/
 *.h5
 *.pt
 *.pkl
+*.npy
+*.json

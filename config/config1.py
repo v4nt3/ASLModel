@@ -23,7 +23,7 @@ class Config:
     DATA_ROOT = PROJECT_ROOT / "data"
     VIDEOS_DIR = DATA_ROOT / "dataset"  # Directorio con videos originales
     FRAMES_DIR = DATA_ROOT / "frames"  # Frames extraídos
-    FEATURES_DIR = DATA_ROOT / "features50"  # Features pre-extraídas
+    FEATURES_DIR = DATA_ROOT / "features101"  # Features pre-extraídas
     
     # Directorios de salida
     CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints"
@@ -43,7 +43,7 @@ class Config:
     
     # ==================== ARQUITECTURA DEL MODELO ====================    
     # # Feature Extractor (ResNet)    
-    RESNET_MODEL = "resnet50"  # Modelo de feature extraction    
+    RESNET_MODEL = "resnet101"  # Modelo de feature extraction    
     RESNET_PRETRAINED = True    
     FEATURE_DIM = 2048  # Dimensión de features de ResNet50    
     FREEZE_BACKBONE = True  # Congelar ResNet durante entrenamiento        

@@ -179,12 +179,10 @@ class ASLClassifierPreExtracted(nn.Module):
         """
         super().__init__()
 
-                # ======== Refinador CNN (nuevo bloque) ========
-        # Paso 1: Proyectar features a espacio menor
+        # Proyectar features a espacio menor
         self.projection = nn.Linear(feature_dim, refine_dim)
 
-        # Paso 2: Mini CNN que aprende relaciones espaciales implícitas
-        # Suponemos que refine_dim = 512 → reshape como (8x8x8)
+        # Mini CNN que aprende relaciones espaciales implícitas
         self.cnn_refiner = nn.Sequential(
             nn.Conv2d(8, 16, kernel_size=3, padding=1),
             nn.BatchNorm2d(16),
@@ -196,7 +194,7 @@ class ASLClassifierPreExtracted(nn.Module):
         
         if use_attention:
             self.temporal_model = TemporalAttentionLSTM(
-                input_dim=refine_dim,  # <--- 512 en lugar de 2048
+                input_dim=refine_dim,  
                 hidden_size=lstm_hidden_size,
                 num_layers=lstm_num_layers,
                 dropout=lstm_dropout,
@@ -204,7 +202,7 @@ class ASLClassifierPreExtracted(nn.Module):
             )
         else:
             self.temporal_model = TemporalLSTM(
-                input_dim=refine_dim,  # <--- 512 en lugar de 2048
+                input_dim=refine_dim,  
                 hidden_size=lstm_hidden_size,
                 num_layers=lstm_num_layers,
                 dropout=lstm_dropout,

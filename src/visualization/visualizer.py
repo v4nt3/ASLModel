@@ -2,16 +2,16 @@
 Sistema de visualización AVANZADO para análisis completo del modelo
 Incluye: métricas detalladas, análisis por clase, curvas ROC, y más
 """
-import numpy as np
-import matplotlib.pyplot as plt
+import numpy as np #type: ignore
+import matplotlib.pyplot as plt #type: ignore
 import seaborn as sns #type: ignore
-from sklearn.metrics import (
+from sklearn.metrics import ( #type: ignore
     confusion_matrix, classification_report, 
     roc_curve, auc, precision_recall_curve,
     f1_score, precision_score, recall_score
 )
-from sklearn.preprocessing import label_binarize
-import pandas as pd
+from sklearn.preprocessing import label_binarize #type: ignore
+import pandas as pd #type: ignore
 from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
@@ -76,7 +76,7 @@ class AdvancedVisualizer:
         
         if save_path:
             plt.savefig(save_path, bbox_inches='tight', dpi=self.dpi)
-            print(f"✓ Gráfica de entrenamiento guardada: {save_path}")
+            print(f"Gráfica de entrenamiento guardada: {save_path}")
         
         plt.show()
     
@@ -117,7 +117,7 @@ class AdvancedVisualizer:
         
         if save_path:
             plt.savefig(save_path, bbox_inches='tight', dpi=self.dpi)
-            print(f"✓ Análisis de overfitting guardado: {save_path}")
+            print(f"Análisis de overfitting guardado: {save_path}")
         
         plt.show()
     
@@ -173,7 +173,7 @@ class AdvancedVisualizer:
         
         if save_path:
             plt.savefig(save_path, bbox_inches='tight', dpi=self.dpi)
-            print(f"✓ Matriz de confusión guardada: {save_path}")
+            print(f"Matriz de confusión guardada: {save_path}")
         
         plt.show()
     
@@ -234,7 +234,7 @@ class AdvancedVisualizer:
         
         if save_path:
             plt.savefig(save_path, bbox_inches='tight', dpi=self.dpi)
-            print(f"✓ Métricas por clase guardadas: {save_path}")
+            print(f"Métricas por clase guardadas: {save_path}")
         
         plt.show()
         
@@ -305,7 +305,7 @@ class AdvancedVisualizer:
         
         if save_path:
             plt.savefig(save_path, bbox_inches='tight', dpi=self.dpi)
-            print(f"✓ Curvas ROC guardadas: {save_path}")
+            print(f"Curvas ROC guardadas: {save_path}")
         
         plt.show()
         
@@ -347,7 +347,7 @@ class AdvancedVisualizer:
         
         if save_path:
             plt.savefig(save_path, bbox_inches='tight', dpi=self.dpi)
-            print(f"✓ Análisis de peores clases guardado: {save_path}")
+            print(f"Análisis de peores clases guardado: {save_path}")
         
         plt.show()
         
@@ -359,9 +359,7 @@ class AdvancedVisualizer:
         save_path = Path(save_dir)
         save_path.mkdir(parents=True, exist_ok=True)
         
-        print("\n" + "="*70)
-        print(" " * 15 + "GENERANDO REPORTE COMPLETO")
-        print("="*70)
+        print("GENERANDO REPORTE COMPLETO")
         
         # 1. Matriz de confusión
         print("\n1. Matriz de confusión...")
@@ -387,16 +385,12 @@ class AdvancedVisualizer:
         print("\n5. Generando resumen de métricas...")
         self._save_metrics_summary(y_true, y_pred, y_pred_proba, roc_auc, save_path)
         
-        print(f"\n{'='*70}")
-        print(f"✓ Reporte completo guardado en: {save_path}")
-        print(f"{'='*70}\n")
+        print(f"Reporte completo guardado en: {save_path}")
     
     def _save_metrics_summary(self, y_true, y_pred, y_pred_proba, roc_auc, save_path):
         """Guarda resumen de métricas en archivo de texto"""
         with open(save_path / 'metrics_summary.txt', 'w') as f:
-            f.write("="*70 + "\n")
-            f.write(" " * 20 + "RESUMEN DE MÉTRICAS\n")
-            f.write("="*70 + "\n\n")
+            f.write("RESUMEN DE MÉTRICAS\n")
             
             # Métricas globales
             acc = 100 * np.mean(y_true == y_pred)
@@ -413,6 +407,5 @@ class AdvancedVisualizer:
             f.write(f"  AUC (macro): {roc_auc['macro']:.4f}\n")
             f.write("\n")
             
-            f.write("="*70 + "\n")
         
-        print(f"✓ Resumen de métricas guardado: {save_path / 'metrics_summary.txt'}")
+        print(f"Resumen de métricas guardado: {save_path / 'metrics_summary.txt'}")

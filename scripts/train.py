@@ -24,9 +24,7 @@ from src.visualization.visualizer import AdvancedVisualizer
 
 def setup_model(config: Config, device: str, num_classes: int):
     """Inicializar modelo"""
-    print("\n" + "="*60)
     print("CONFIGURACIÓN DEL MODELO")
-    print("="*60)
     
     model = ASLClassifierPreExtracted(
         num_classes=num_classes,
@@ -46,9 +44,9 @@ def setup_model(config: Config, device: str, num_classes: int):
         print("Compilando modelo con torch.compile()...")
         try:
             model = torch.compile(model)
-            print("✓ Modelo compilado exitosamente")
+            print("Modelo compilado exitosamente")
         except Exception as e:
-            print(f"⚠ No se pudo compilar el modelo: {e}")
+            print(f"No se pudo compilar el modelo: {e}")
     
     print(f"Modelo: ASLClassifierPreExtracted")
     print(f"Feature Dim: {config.FEATURE_DIM}")
@@ -58,16 +56,14 @@ def setup_model(config: Config, device: str, num_classes: int):
     print(f"Attention: {config.USE_ATTENTION}")
     print(f"Total Parameters: {sum(p.numel() for p in model.parameters()):,}")
     print(f"Trainable Parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad):,}")
-    print("="*60)
+    
     
     return model
 
 
 def setup_training(model, config: Config):
     """Configurar optimizador, loss y scheduler"""
-    print("\n" + "="*60)
     print("CONFIGURACIÓN DE ENTRENAMIENTO")
-    print("="*60)
     
     # Optimizer
     if config.OPTIMIZER.lower() == "adamw":
@@ -130,18 +126,16 @@ def train_model():
     
     # Device
     device = config.DEVICE
-    print(f"\n{'='*60}")
     print(f"DISPOSITIVO: {device}")
     if torch.cuda.is_available():
         print(f"GPU: {torch.cuda.get_device_name(0)}")
         print(f"Memoria GPU disponible: {torch.cuda.get_device_properties(0).total_memory / 1e9:.2f} GB")
-    print(f"{'='*60}")
-    
+
     if config.USE_CONSOLIDATED_FEATURES:
         consolidated_file = config.FEATURES_DIR / "features_consolidated.npy"
         
         if consolidated_file.exists():
-            print("\n✓ Usando features consolidadas (MODO RÁPIDO)")
+            print("\nUsando features consolidadas (MODO RÁPIDO)")
             train_loader, val_loader, test_loader, num_classes, label_mapping = create_dataloaders_from_consolidated(
                 features_dir=str(config.FEATURES_DIR),
                 batch_size=config.BATCH_SIZE,
@@ -154,7 +148,7 @@ def train_model():
                 random_state=config.RANDOM_SEED
             )
         else:
-            print("\n⚠ Features consolidadas no encontradas")
+            print("\nFeatures consolidadas no encontradas")
             
             train_loader, val_loader, test_loader, num_classes, label_mapping = create_dataloaders_from_features_lazy(
                 cnn_dir=str(config.FEATURES_DIR),
@@ -223,7 +217,6 @@ def train_model():
     # Evaluar en test set
     test_results = trainer.test()
     
-    # ------------------ INICIO: Bloque adicional de visualizaciones ------------------
     import torch.nn.functional as F #type: ignore
     import numpy as np
 
@@ -261,7 +254,7 @@ def train_model():
 
                 inputs = inputs.to(device)
                 outputs = trainer.model(inputs) if hasattr(trainer, 'model') else model(inputs)
-                # Si outputs es un tupla (por ejemplo (logits, ...)), tomar first
+                # Si outputs es un tupla
                 if isinstance(outputs, (list, tuple)):
                     logits = outputs[0]
                 else:
@@ -270,7 +263,7 @@ def train_model():
                 probs = F.softmax(logits, dim=1).cpu().numpy()
                 preds = np.argmax(probs, axis=1)
 
-                # Manejar labels (pueden ser one-hot)
+                # Manejar labels
                 if labels is None:
                     raise RuntimeError("Los batches no contienen etiquetas 'labels' - necesario para las gráficas.")
                 if hasattr(labels, 'cpu'):
@@ -289,16 +282,16 @@ def train_model():
         return np.array(y_trues), np.array(y_preds), np.vstack(y_probs)
 
 
-    print("\nGenerando visualizaciones extendidas (confusion, per-class, ROC, worst-classes, reporte)...")
+    print("\nGenerando visualizaciones extendidas (confusion, per-class, ROC, worst-classes, reporte)")
 
-    # Recolectar predicciones (usa trainer.model para asegurar que sea el modelo final entrenado)
+    # Recolectar predicciones
     y_true, y_pred, y_pred_proba = collect_test_predictions(
         model=trainer.model if hasattr(trainer, 'model') else model,
         loader=test_loader,
         device=device
     )
 
-    # Inicializar visualizador (usa la misma configuración que antes)
+    # Inicializar visualizador
     advanced_visualizer = AdvancedVisualizer()
 
     advanced_visualizer.plot_training_history(
@@ -311,7 +304,7 @@ def train_model():
         advanced_visualizer.plot_metrics_comparison(trainer.metrics_tracker.history,
                                                 save_path=config.VISUALIZATIONS_DIR / 'overfitting_analysis.png')
     except Exception as e:
-        print(f"⚠ No se pudo generar plot_metrics_comparison: {e}")
+        print(f"No se pudo generar plot_metrics_comparison: {e}")
 
     # 2) Matriz de confusión
     try:
@@ -319,7 +312,7 @@ def train_model():
                                                 class_names=list(label_mapping.keys()),
                                                 save_path=config.VISUALIZATIONS_DIR / 'confusion_matrix.png')
     except Exception as e:
-        print(f"⚠ No se pudo generar matriz de confusión: {e}")
+        print(f"No se pudo generar matriz de confusión: {e}")
 
     # 3) Métricas por clase
     try:
@@ -327,7 +320,7 @@ def train_model():
                                                 class_names=list(label_mapping.keys()),
                                                 save_path=config.VISUALIZATIONS_DIR / 'per_class_metrics.png')
     except Exception as e:
-        print(f"⚠ No se pudo generar métricas por clase: {e}")
+        print(f"No se pudo generar métricas por clase: {e}")
 
     # 4) Curvas ROC (necesita probabilidades)
     try:
@@ -335,7 +328,7 @@ def train_model():
                                             class_names=list(label_mapping.keys()),
                                             save_path=config.VISUALIZATIONS_DIR / 'roc_curves.png')
     except Exception as e:
-        print(f"⚠ No se pudo generar curvas ROC: {e}")
+        print(f"No se pudo generar curvas ROC: {e}")
 
     # 5) Peores clases
     try:
@@ -344,18 +337,17 @@ def train_model():
                                             top_n=20,
                                             save_path=config.VISUALIZATIONS_DIR / 'worst_classes.png')
     except Exception as e:
-        print(f"⚠ No se pudo generar análisis de peores clases: {e}")
+        print(f"No se pudo generar análisis de peores clases: {e}")
 
-    # 6) Reporte completo (guarda todo en carpeta)
+    # 6) Reporte completo
     try:
         advanced_visualizer.generate_complete_report(y_true, y_pred, y_pred_proba,
                                                     class_names=list(label_mapping.keys()),
                                                     save_dir=str(config.VISUALIZATIONS_DIR))
     except Exception as e:
-        print(f"⚠ No se pudo generar el reporte completo: {e}")
+        print(f"No se pudo generar el reporte completo: {e}")
 
     print("Visualizaciones extendidas generadas y guardadas en:", config.VISUALIZATIONS_DIR)
-    # ------------------ FIN: Bloque adicional de visualizaciones ------------------
 
     
     # Guardar resultados finales
@@ -371,7 +363,7 @@ def train_model():
     with open(results_path, 'w') as f:
         json.dump(results, f, indent=2)
     
-    print(f"\n{'='*60}")
+    
     print("ENTRENAMIENTO COMPLETADO")
     print(f"{'='*60}")
     print(f"Mejor época: {trainer.best_epoch}")
@@ -381,7 +373,6 @@ def train_model():
     print(f"\nResultados guardados en: {results_path}")
     print(f"Checkpoints guardados en: {config.CHECKPOINTS_DIR}")
     print(f"Visualizaciones guardadas en: {config.VISUALIZATIONS_DIR}")
-    print(f"{'='*60}")
 
 
 def main():
