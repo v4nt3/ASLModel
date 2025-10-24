@@ -36,7 +36,7 @@ class Config:
     
     # ==================== PARÁMETROS DE VIDEO Y FRAMES ====================    
     NUM_FRAMES = 30  # Número de frames a extraer por video    
-    FRAME_SIZE = (224, 224)  # Tamaño para ResNet50   
+    FRAME_SIZE = (224, 224)  # Tamaño para ResNet101   
     CROP_PERCENTAGE = 0.10  # Ignorar 10% del inicio y final (tomar solo el centro)        
     PADDING_MODE = "repeat_last"  # "repeat_last", "zeros", "replicate"    
     MIN_FRAMES_THRESHOLD = 10  # Mínimo de frames para considerar un video válido       
@@ -45,7 +45,7 @@ class Config:
     # # Feature Extractor (ResNet)    
     RESNET_MODEL = "resnet101"  # Modelo de feature extraction    
     RESNET_PRETRAINED = True    
-    FEATURE_DIM = 2048  # Dimensión de features de ResNet50    
+    FEATURE_DIM = 2048  # Dimensión de features de ResNet101  
     FREEZE_BACKBONE = True  # Congelar ResNet durante entrenamiento        
     
     
@@ -62,10 +62,10 @@ class Config:
     CLASSIFIER_DROPOUT = 0.5        
     
     # ==================== HIPERPARÁMETROS DE ENTRENAMIENTO ====================    
-    BATCH_SIZE = 64  # Aumentado para maximizar uso de GPU    
+    BATCH_SIZE = 64    
     NUM_EPOCHS = 150    
     LEARNING_RATE = 3e-4 # Reducido para evitar inestabilidad    
-    WEIGHT_DECAY = 1e-4        # Learning rate scheduler    
+    WEIGHT_DECAY = 1e-4  # Learning rate scheduler    
     SCHEDULER_TYPE = "plateau"  # "cosine", "step", "plateau" - plateau es más estable    
     WARMUP_EPOCHS = 5    
     SCHEDULER_T0 = 10  # Para CosineAnnealingWarmRestarts    
@@ -92,11 +92,11 @@ class Config:
     LABEL_SMOOTHING = 0.1  # reducir overfitting    
     EARLY_STOPPING_PATIENCE = 10    
     USE_AMP = True  # Automatic Mixed Precision  
-    GRADIENT_ACCUMULATION_STEPS = 1  # Aumentar si batch_size es muy grande para la GPU        
+    GRADIENT_ACCUMULATION_STEPS = 1         
     
     # ==================== DEVICE Y WORKERS ====================    
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")    
-    NUM_WORKERS = 0  # Aumentado de 8 a 12 para evitar CPU bottleneck    
+    NUM_WORKERS = 0     
     PIN_MEMORY = True    
     PREFETCH_FACTOR = 4  # Pre-cargar 4 batches por worker    
     PERSISTENT_WORKERS = True  # No recrear workers entre épocas       
