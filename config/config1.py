@@ -2,7 +2,7 @@ import torch #type: ignore
 from pathlib import Path
 
 class Config:
-    # ==================== RUTAS DEL PROYECTO ====================
+    #  RUTAS DEL PROYECTO 
     PROJECT_ROOT = Path(__file__).parent.parent
     """
 Configuración centralizada para el proyecto de reconocimiento ASL
@@ -12,7 +12,7 @@ import torch #type: ignore
 from pathlib import Path
 
 class Config:
-    # ==================== RUTAS DEL PROYECTO ====================
+    #  RUTAS DEL PROYECTO 
     PROJECT_ROOT = Path(__file__).parent.parent
     
     DATA_ROOT = PROJECT_ROOT / "data"
@@ -29,14 +29,14 @@ class Config:
     for dir_path in [FRAMES_DIR, FEATURES_DIR, CHECKPOINTS_DIR, LOGS_DIR, VISUALIZATIONS_DIR]:
         dir_path.mkdir(parents=True, exist_ok=True)
     
-    # ==================== PARÁMETROS DE VIDEO Y FRAMES ====================    
+    #  PARÁMETROS DE VIDEO Y FRAMES     
     NUM_FRAMES = 30  # Número de frames a extraer por video    
     FRAME_SIZE = (224, 224)  # Tamaño para ResNet101   
     CROP_PERCENTAGE = 0.10  # Ignorar 10% del inicio y final (tomar solo el centro)        
     PADDING_MODE = "repeat_last"  # "repeat_last", "zeros", "replicate"    
     MIN_FRAMES_THRESHOLD = 10  # Mínimo de frames para considerar un video válido       
     
-    # ==================== ARQUITECTURA DEL MODELO ====================    
+    #  ARQUITECTURA DEL MODELO     
     # # Feature Extractor (ResNet)    
     RESNET_MODEL = "resnet101"  # Modelo de feature extraction    
     RESNET_PRETRAINED = True    
@@ -46,17 +46,17 @@ class Config:
     
     # LSTM parameters    
     LSTM_HIDDEN_SIZE = 512    
-    LSTM_NUM_LAYERS = 2    
+    LSTM_NUM_LAYERS = 2 
     LSTM_DROPOUT = 0.3    
     LSTM_BIDIRECTIONAL = True    
     USE_ATTENTION = True  
 
-  # Clasificador    
+    # Clasificador    
     NUM_CLASSES = 2288  # ASL Citizen dataset   
     CLASSIFIER_HIDDEN_DIMS = [1024, 512]    
     CLASSIFIER_DROPOUT = 0.5        
     
-    # ==================== HIPERPARÁMETROS DE ENTRENAMIENTO ====================    
+    #  HIPERPARÁMETROS DE ENTRENAMIENTO     
     BATCH_SIZE = 64    
     NUM_EPOCHS = 150    
     LEARNING_RATE = 3e-4 # Reducido para evitar inestabilidad    
@@ -70,26 +70,26 @@ class Config:
     # Optimizer    
     OPTIMIZER = "adam"  # "adam", "adamw", "sgd"       
     
-    # ==================== DIVISIÓN DE DATOS ====================    
+    #  DIVISIÓN DE DATOS     
     TRAIN_SPLIT = 0.7    
     VAL_SPLIT = 0.15    
     TEST_SPLIT = 0.15    
     RANDOM_SEED = 42       
     
-    # ==================== AUGMENTATION ====================    
+    #  AUGMENTATION     
     USE_AUGMENTATION = True    
     HORIZONTAL_FLIP_PROB = 0.5    
     ROTATION_DEGREES = 10    
     COLOR_JITTER = 0.2        
     
-    # ==================== CONFIGURACIÓN DE ENTRENAMIENTO ====================    
+    #  CONFIGURACIÓN DE ENTRENAMIENTO     
     GRADIENT_CLIP = 1.0    
     LABEL_SMOOTHING = 0.1  # reducir overfitting    
     EARLY_STOPPING_PATIENCE = 10    
     USE_AMP = True  # Automatic Mixed Precision  
     GRADIENT_ACCUMULATION_STEPS = 1         
     
-    # ==================== DEVICE Y WORKERS ====================    
+    #  DEVICE Y WORKERS     
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")    
     NUM_WORKERS = 0     
     PIN_MEMORY = True    
@@ -98,11 +98,11 @@ class Config:
     USE_TORCH_COMPILE = False  # Deshabilitado - requiere triton que no es compatible con esta versión        
     USE_CONSOLIDATED_FEATURES = True  # Usar features consolidadas (mucho más rápido)        
     
-    # ==================== LOGGING Y CHECKPOINTS ====================    
+    #  LOGGING Y CHECKPOINTS     
     LOG_INTERVAL = 10  # Log cada N batches    
     SAVE_INTERVAL = 5  # Guardar checkpoint cada N épocas       
     
-    # ==================== VISUALIZACIÓN ====================    
+    #  VISUALIZACIÓN     
     PLOT_INTERVAL = 1  # Actualizar plots cada N épocas    
     TOP_K = [1, 5, 10]  # Top-K accuracy a calcular
 

@@ -26,9 +26,9 @@ def load_all_cnn_features(cnn_dir: str, label_mapping_path: str = None):
         num_classes: Número total de clases
         label_mapping: Diccionario de mapeo clase -> índice
     """
-    print("\n" + "="*60)
+    
     print("CARGANDO CNN FEATURES EN MEMORIA")
-    print("="*60)
+    
     
     cnn_path = Path(cnn_dir)
     
@@ -44,7 +44,7 @@ def load_all_cnn_features(cnn_dir: str, label_mapping_path: str = None):
         label_mapping = json.load(f)
     
     num_classes = len(label_mapping)
-    print(f"✓ Cargado label_mapping.json: {num_classes} clases")
+    print(f"Cargado label_mapping.json: {num_classes} clases")
     
     label_indices = set(label_mapping.values())
     expected_indices = set(range(num_classes))
@@ -52,7 +52,7 @@ def load_all_cnn_features(cnn_dir: str, label_mapping_path: str = None):
     if label_indices != expected_indices:
         missing = expected_indices - label_indices
         extra = label_indices - expected_indices
-        print(f"\n⚠ ERROR: Inconsistencia en label_mapping!")
+        print(f"\n ERROR: Inconsistencia en label_mapping!")
         if missing:
             print(f"  Índices faltantes: {sorted(missing)}")
         if extra:
@@ -67,9 +67,9 @@ def load_all_cnn_features(cnn_dir: str, label_mapping_path: str = None):
     print("\nCargando CNN features desde carpetas de clases...")
     class_folders = sorted([d for d in cnn_path.iterdir() if d.is_dir()])
     
-    print(f"✓ Carpetas encontradas: {len(class_folders)}")
+    print(f"Carpetas encontradas: {len(class_folders)}")
     if len(class_folders) != num_classes:
-        print(f"\n⚠ WARNING: Número de carpetas ({len(class_folders)}) != clases en label_mapping ({num_classes})")
+        print(f"\nNúmero de carpetas ({len(class_folders)}) != clases en label_mapping ({num_classes})")
         print(f"  Esto puede causar problemas. Considera regenerar label_mapping.json")
     
     for class_folder in tqdm(class_folders, desc="Cargando clases"):
@@ -106,14 +106,14 @@ def load_all_cnn_features(cnn_dir: str, label_mapping_path: str = None):
                     break
             
             if not found:
-                print(f"\n⚠ Clase '{actual_class_name}' no encontrada en label_mapping")
+                print(f"\n Clase '{actual_class_name}' no encontrada en label_mapping")
                 skipped_count += 1
                 continue
         
         class_idx = label_mapping[actual_class_name]
         
         if class_idx < 0 or class_idx >= num_classes:
-            print(f"\n⚠ ERROR: Clase '{actual_class_name}' tiene índice fuera de rango: {class_idx}")
+            print(f"\n ERROR: Clase '{actual_class_name}' tiene índice fuera de rango: {class_idx}")
             print(f"  Rango válido: [0, {num_classes-1}]")
             skipped_count += 1
             continue
@@ -126,29 +126,29 @@ def load_all_cnn_features(cnn_dir: str, label_mapping_path: str = None):
                 features = np.load(npy_file)  # Shape: (30, 2048)
                 
                 if len(features.shape) != 2 or features.shape[0] != 30:
-                    print(f"\n⚠ Shape incorrecto en {npy_file}: {features.shape}")
+                    print(f"\n Shape incorrecto en {npy_file}: {features.shape}")
                     continue
                 
                 all_features.append(features)
                 all_labels.append(class_idx)
             except Exception as e:
-                print(f"\n⚠ Error cargando {npy_file}: {e}")
+                print(f"\n Error cargando {npy_file}: {e}")
     
     if skipped_count > 0:
-        print(f"\n⚠ Se omitieron {skipped_count} carpetas por problemas de mapeo")
+        print(f"\n Se omitieron {skipped_count} carpetas por problemas de mapeo")
     
     # Convertir a arrays numpy
     X = np.array(all_features, dtype=np.float32)  # (N, 30, 2048)
     y = np.array(all_labels, dtype=np.int64)
     
-    print(f"\n✓ CNN features cargados:")
+    print(f"\nCNN features cargados:")
     print(f"  Total samples: {len(X)}")
     print(f"  Shape: {X.shape}")
     print(f"  Clases únicas: {len(np.unique(y))}")
     print(f"  Rango de etiquetas: [{y.min()}, {y.max()}]")
     
     if y.max() >= num_classes:
-        print(f"\n❌ ERROR CRÍTICO: Etiqueta máxima ({y.max()}) >= num_classes ({num_classes})")
+        print(f"\nERROR CRÍTICO: Etiqueta máxima ({y.max()}) >= num_classes ({num_classes})")
         print(f"  Esto significa que hay etiquetas fuera de rango.")
         print(f"  Para {num_classes} clases, las etiquetas deben estar en [0, {num_classes-1}]")
         print(f"\n  SOLUCIÓN: Regenera label_mapping.json ejecutando:")
@@ -161,7 +161,7 @@ def load_all_cnn_features(cnn_dir: str, label_mapping_path: str = None):
     unique_labels = set(y.tolist())
     missing_classes = expected_indices - unique_labels
     if missing_classes:
-        print(f"\n⚠ WARNING: {len(missing_classes)} clases sin samples:")
+        print(f"\n WARNING: {len(missing_classes)} clases sin samples:")
         if len(missing_classes) <= 10:
             for idx in sorted(missing_classes):
                 class_name = [k for k, v in label_mapping.items() if v == idx][0]
@@ -198,12 +198,12 @@ def create_train_val_test_splits(X, y, test_size=0.15, val_size=0.15, random_sta
         random_state=random_state, stratify=y_temp
     )
     
-    print(f"\n✓ Splits creados:")
+    print(f"\nSplits creados:")
     print(f"  Train: {len(X_train)} samples ({len(X_train)/len(X)*100:.1f}%)")
     print(f"  Val:   {len(X_val)} samples ({len(X_val)/len(X)*100:.1f}%)")
     print(f"  Test:  {len(X_test)} samples ({len(X_test)/len(X)*100:.1f}%)")
     
-    print(f"\n✓ Distribución de clases:")
+    print(f"\nDistribución de clases:")
     print(f"  Train: {len(np.unique(y_train))} clases únicas")
     print(f"  Val:   {len(np.unique(y_val))} clases únicas")
     print(f"  Test:  {len(np.unique(y_test))} clases únicas")
@@ -228,7 +228,7 @@ def load_video_metadata(metadata_csv: str):
         if col not in df.columns:
             raise ValueError(f"CSV debe contener columna '{col}'")
     
-    print(f"\n✓ Metadata cargada: {len(df)} videos")
+    print(f"\nMetadata cargada: {len(df)} videos")
     print(f"  Clases únicas: {df['label'].nunique()}")
     
     return df
@@ -276,7 +276,7 @@ def create_dataloaders_from_videos(video_paths, labels, frame_extractor,
         random_state=random_state, stratify=y_temp
     )
     
-    print(f"\n✓ Splits creados:")
+    print(f"\nSplits creados:")
     print(f"  Train: {len(X_train)} videos")
     print(f"  Val:   {len(X_val)} videos")
     print(f"  Test:  {len(X_test)} videos")
@@ -391,9 +391,9 @@ def scan_cnn_features_lazy(cnn_dir: str, label_mapping_path: str = None):
         num_classes: Número total de clases
         label_mapping: Diccionario de mapeo clase -> índice
     """
-    print("\n" + "="*60)
-    print("ESCANEANDO CNN FEATURES (LAZY LOADING)")
-    print("="*60)
+    
+    print("\nESCANEANDO CNN FEATURES (LAZY LOADING)")
+    
     
     cnn_path = Path(cnn_dir)
     
@@ -409,7 +409,7 @@ def scan_cnn_features_lazy(cnn_dir: str, label_mapping_path: str = None):
         label_mapping = json.load(f)
     
     num_classes = len(label_mapping)
-    print(f"✓ Cargado label_mapping.json: {num_classes} clases")
+    print(f"Cargado label_mapping.json: {num_classes} clases")
     
     label_indices = set(label_mapping.values())
     expected_indices = set(range(num_classes))
@@ -417,7 +417,7 @@ def scan_cnn_features_lazy(cnn_dir: str, label_mapping_path: str = None):
     if label_indices != expected_indices:
         missing = expected_indices - label_indices
         extra = label_indices - expected_indices
-        print(f"\n⚠ ERROR: Inconsistencia en label_mapping!")
+        print(f"\n ERROR: Inconsistencia en label_mapping!")
         if missing:
             print(f"  Índices faltantes: {sorted(missing)}")
         if extra:
@@ -428,10 +428,10 @@ def scan_cnn_features_lazy(cnn_dir: str, label_mapping_path: str = None):
     labels = []
     skipped_count = 0
     
-    print("\nEscaneando archivos .npy...")
+    print("\nEscaneando archivos .npy")
     class_folders = sorted([d for d in cnn_path.iterdir() if d.is_dir()])
     
-    print(f"✓ Carpetas encontradas: {len(class_folders)}")
+    print(f"Carpetas encontradas: {len(class_folders)}")
     
     for class_folder in tqdm(class_folders, desc="Escaneando clases"):
         class_name = class_folder.name
@@ -482,16 +482,16 @@ def scan_cnn_features_lazy(cnn_dir: str, label_mapping_path: str = None):
             labels.append(class_idx)
     
     if skipped_count > 0:
-        print(f"\n⚠ Se omitieron {skipped_count} carpetas por problemas de mapeo")
+        print(f"\n Se omitieron {skipped_count} carpetas por problemas de mapeo")
     
-    print(f"\n✓ Archivos escaneados:")
+    print(f"\nArchivos escaneados:")
     print(f"  Total samples: {len(feature_paths)}")
     print(f"  Clases únicas: {len(set(labels))}")
     print(f"  Rango de etiquetas: [{min(labels)}, {max(labels)}]")
     print(f"  Memoria usada: ~{len(feature_paths) * 100 / 1024:.2f} KB (solo paths)")
     
     if max(labels) >= num_classes:
-        print(f"\n❌ ERROR: Etiqueta máxima ({max(labels)}) >= num_classes ({num_classes})")
+        print(f"\nERROR: Etiqueta máxima ({max(labels)}) >= num_classes ({num_classes})")
         raise ValueError("Etiquetas fuera de rango! Regenera label_mapping.json")
     
     return feature_paths, labels, num_classes, label_mapping
@@ -550,7 +550,7 @@ def create_dataloaders_from_features_lazy(cnn_dir: str,
         random_state=random_state, stratify=y_temp
     )
     
-    print(f"\n✓ Splits creados:")
+    print(f"\nSplits creados:")
     print(f"  Train: {len(paths_train)} samples ({len(paths_train)/len(feature_paths)*100:.1f}%)")
     print(f"  Val:   {len(paths_val)} samples ({len(paths_val)/len(feature_paths)*100:.1f}%)")
     print(f"  Test:  {len(paths_test)} samples ({len(paths_test)/len(feature_paths)*100:.1f}%)")
@@ -586,7 +586,7 @@ def create_dataloaders_from_features_lazy(cnn_dir: str,
         **dataloader_kwargs
     )
     
-    print(f"\n✓ DataLoaders creados con lazy loading")
+    print(f"\nDataLoaders creados con lazy loading")
     print(f"  Memoria estimada por batch: ~{batch_size * 30 * 2048 * 4 / 1024 / 1024:.2f} MB")
     print(f"  Num workers: {num_workers}")
     print(f"  Prefetch factor: {prefetch_factor if num_workers > 0 else 'N/A'}")
@@ -624,9 +624,9 @@ def create_dataloaders_from_consolidated(features_dir: str,
     """
     from src.data.dataset import ASLConsolidatedDataset
     
-    print("\n" + "="*60)
-    print("CARGANDO FEATURES CONSOLIDADAS (RÁPIDO)")
-    print("="*60)
+    
+    print("\nCARGANDO FEATURES CONSOLIDADAS")
+    
     
     features_dir = Path(features_dir)
     
@@ -653,13 +653,13 @@ def create_dataloaders_from_consolidated(features_dir: str,
         label_mapping = json.load(f)
     
     num_classes = len(label_mapping)
-    print(f"✓ Label mapping: {num_classes} clases")
+    print(f"Label mapping: {num_classes} clases")
     
     # Cargar labels para hacer splits
     labels = np.load(labels_file, mmap_mode='r')
     total_samples = len(labels)
     
-    print(f"✓ Total samples: {total_samples}")
+    print(f"Total samples: {total_samples}")
     
     # Crear índices para splits
     indices = np.arange(total_samples)
@@ -679,7 +679,7 @@ def create_dataloaders_from_consolidated(features_dir: str,
         random_state=random_state, stratify=y_temp
     )
     
-    print(f"\n✓ Splits creados:")
+    print(f"\nSplits creados:")
     print(f"  Train: {len(idx_train)} samples ({len(idx_train)/total_samples*100:.1f}%)")
     print(f"  Val:   {len(idx_val)} samples ({len(idx_val)/total_samples*100:.1f}%)")
     print(f"  Test:  {len(idx_test)} samples ({len(idx_test)/total_samples*100:.1f}%)")
@@ -710,7 +710,7 @@ def create_dataloaders_from_consolidated(features_dir: str,
     val_loader = DataLoader(val_dataset, shuffle=False, **dataloader_kwargs)
     test_loader = DataLoader(test_dataset, shuffle=False, **dataloader_kwargs)
     
-    print(f"\n✓ DataLoaders creados (MODO RÁPIDO)")
+    print(f"\nDataLoaders creados")
     print(f"  Batch size: {batch_size}")
     print(f"  Num workers: {num_workers}")
     print(f"  Prefetch factor: {prefetch_factor if num_workers > 0 else 'N/A'}")
