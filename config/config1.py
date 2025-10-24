@@ -1,7 +1,3 @@
-"""
-Configuración centralizada para el proyecto de reconocimiento ASL
-Todas las rutas y parámetros están definidos aquí para evitar argumentos en línea de comandos
-"""
 import torch #type: ignore
 from pathlib import Path
 
@@ -19,7 +15,6 @@ class Config:
     # ==================== RUTAS DEL PROYECTO ====================
     PROJECT_ROOT = Path(__file__).parent.parent
     
-    # IMPORTANTE: Modifica estas rutas según tu estructura de directorios
     DATA_ROOT = PROJECT_ROOT / "data"
     VIDEOS_DIR = DATA_ROOT / "dataset"  # Directorio con videos originales
     FRAMES_DIR = DATA_ROOT / "frames"  # Frames extraídos
