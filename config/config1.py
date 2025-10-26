@@ -36,8 +36,8 @@ class Config:
     PADDING_MODE = "repeat_last"  # "repeat_last", "zeros", "replicate"    
     MIN_FRAMES_THRESHOLD = 10  # Mínimo de frames para considerar un video válido       
     
-    #  ARQUITECTURA DEL MODELO     
-    # # Feature Extractor (ResNet)    
+    # ARQUITECTURA DEL MODELO     
+    # Feature Extractor (ResNet)    
     RESNET_MODEL = "resnet101"  # Modelo de feature extraction    
     RESNET_PRETRAINED = True    
     FEATURE_DIM = 2048  # Dimensión de features de ResNet101  
@@ -45,11 +45,11 @@ class Config:
     
     
     # LSTM parameters    
-    LSTM_HIDDEN_SIZE = 512    
+    LSTM_HIDDEN_SIZE = 768    
     LSTM_NUM_LAYERS = 2 
-    LSTM_DROPOUT = 0.3    
+    LSTM_DROPOUT = 0.4    
     LSTM_BIDIRECTIONAL = True    
-    USE_ATTENTION = True  
+    USE_ATTENTION = False  
 
     # Clasificador    
     NUM_CLASSES = 2288  # ASL Citizen dataset   
@@ -58,7 +58,7 @@ class Config:
     
     #  HIPERPARÁMETROS DE ENTRENAMIENTO     
     BATCH_SIZE = 64    
-    NUM_EPOCHS = 150    
+    NUM_EPOCHS = 200    
     LEARNING_RATE = 3e-4 # Reducido para evitar inestabilidad    
     WEIGHT_DECAY = 1e-4  # Learning rate scheduler    
     SCHEDULER_TYPE = "plateau"  # "cosine", "step", "plateau" - plateau es más estable    
