@@ -5,5 +5,4 @@ checkpoints/
 *.pt
 *.pkl
 *.npy
-*.json
 *.pth

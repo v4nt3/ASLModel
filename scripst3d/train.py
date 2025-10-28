@@ -5,9 +5,9 @@ All configuration is in config.py - just run this script directly!
 import sys
 sys.path.append('.')
 
-import torch #type:ignore
-import torch.nn as nn #type:ignore
-from torch.utils.data import DataLoader #type:ignore
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader
 import json
 from pathlib import Path
 
@@ -17,7 +17,7 @@ from src3d.data.dataset import SignLanguageDataset
 from src3d.training.trainer import Trainer
 from src3d.training.callbacks import EarlyStopping, ModelCheckpoint, LearningRateScheduler
 from src3d.utils.metrics import calculate_class_weights
-from src3d.utils.visualization import plot_roc_curves, plot_training_history
+from src3d.utils.visualization import plot_training_history
 
 def main():
     # Create directories
@@ -29,7 +29,7 @@ def main():
     print(f"Using device: {device}\n")
     
     # Create datasets
-    print("Loading datasets...")
+    print("Loading datasets")
     train_dataset = SignLanguageDataset(
         data_dir=Config.DATA_DIR,
         split_file=Config.OUTPUT_DIR / 'train.json',
@@ -67,7 +67,7 @@ def main():
     )
     
     # Create model
-    print(f"Creating {Config.MODEL_ARCH.upper()} model...")
+    print(f"Creating {Config.MODEL_ARCH.upper()} model")
     model = get_model(
         arch=Config.MODEL_ARCH,
         num_classes=Config.NUM_CLASSES,
@@ -77,7 +77,7 @@ def main():
     
     # Calculate class weights for imbalanced dataset
     if Config.USE_CLASS_WEIGHTS:
-        print("\nCalculating class weights...")
+        print("\nCalculating class weights")
         class_weights = calculate_class_weights(
             Config.OUTPUT_DIR / 'train.json',
             Config.NUM_CLASSES
@@ -145,7 +145,7 @@ def main():
     best_acc = 0.0
     
     # Training loop
-    print("\nStarting training...\n")
+    print("\nStarting training\n")
     for epoch in range(1, Config.NUM_EPOCHS + 1):
         # Train
         train_loss, train_acc, _ = trainer.train_epoch(epoch)
@@ -205,8 +205,13 @@ def main():
             if callbacks['early_stopping'](val_acc):
                 print(f"\nEarly stopping triggered at epoch {epoch}")
                 break
-        
+    
+    
+    print("GENERATING FINAL VISUALIZATIONS")
 
+    print("Generating training history with overfitting analysis")
+    plot_training_history(history, Config.PLOTS_DIR)
+    
     # Save final history
     with open(Config.RESULTS_DIR / 'training_history.json', 'w') as f:
         json.dump(history, f, indent=2)
@@ -215,6 +220,8 @@ def main():
     print(f"Best validation accuracy: {best_acc:.2f}%")
     print(f"Checkpoints saved to: {Config.CHECKPOINT_DIR}")
     print(f"Plots saved to: {Config.PLOTS_DIR}")
+    print(f"\nTo generate comprehensive evaluation metrics (ROC, AUC, Confusion Matrix, etc.),")
+    print(f"run: python scripts/evaluate.py")
 
 if __name__ == '__main__':
     main()

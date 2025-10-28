@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
-import seaborn as sns #type: ignore
+import seaborn as sns
 import numpy as np
 from sklearn.metrics import confusion_matrix, roc_curve, auc, precision_recall_curve, average_precision_score
 from sklearn.preprocessing import label_binarize
-import torch #type: ignore
+import torch
 from pathlib import Path
 import json
 
@@ -415,33 +415,36 @@ def generate_all_visualizations(y_true, y_pred, y_probs, class_names, history, s
     save_dir = Path(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
     
+    print("\n" + "="*60)
     print("Generating Visualizations")
+    print("="*60)
     
     # Training history
     if history is not None:
-        print("\n Plotting training history")
+        print("\n[1/7] Plotting training history...")
         plot_training_history(history, save_dir)
     
     # Confusion matrices
-    print("\n Plotting confusion matrices")
+    print("\n[2/7] Plotting confusion matrices...")
     plot_confusion_matrix(y_true, y_pred, class_names, save_dir, normalize=False)
     plot_confusion_matrix(y_true, y_pred, class_names, save_dir, normalize=True)
     
     # ROC curves
-    print("\n Plotting ROC curves")
+    print("\n[3/7] Plotting ROC curves...")
     plot_roc_curves(y_true, y_probs, len(class_names), save_dir)
     
     # Precision-Recall curves
-    print("\n Plotting Precision-Recall curves")
+    print("\n[4/7] Plotting Precision-Recall curves...")
     plot_precision_recall_curves(y_true, y_probs, len(class_names), save_dir)
     
     # Top-K accuracy
-    print("\n Plotting Top-K accuracy")
+    print("\n[5/7] Plotting Top-K accuracy...")
     plot_top_k_accuracy(y_true, y_probs, save_dir)
     
     # Class performance
-    print("\n Plotting class performance")
+    print("\n[6/7] Plotting class performance...")
     plot_class_performance(y_true, y_pred, class_names, save_dir)
     
+    print("\n[7/7] All visualizations complete!")
     print(f"\nAll plots saved to: {save_dir}")
     print("="*60 + "\n")

@@ -1,12 +1,13 @@
 """
 Centralized configuration file for the 3D CNN Sign Language Recognition pipeline
+Modify all paths and hyperparameters here
 """
 from pathlib import Path
 
 class Config:
     # PATHS
     # Data paths
-    DATA_DIR = Path("data/dataset")  
+    DATA_DIR = Path("data/dataset") 
     OUTPUT_DIR = Path("data")  # Where to save train.json, val.json, test.json
     
     # Model paths
@@ -18,11 +19,11 @@ class Config:
     # Dataset split ratios
     TRAIN_RATIO = 0.7
     VAL_RATIO = 0.15
-    TEST_RATIO = 0.15
+    TEST_RATIO = 0.15  # Remaining after train and val
     
     # Video processing
-    NUM_FRAMES = 40  # Number of frames to extract from center of each video
-    FRAME_SIZE = 112  # Spatial size (height and width)
+    NUM_FRAMES = 40
+    FRAME_SIZE = 112
     NUM_CLASSES = 2288
     
     # MODEL PARAMETERS
@@ -34,26 +35,26 @@ class Config:
     
     # TRAINING PARAMETERS
     # Training settings
-    BATCH_SIZE = 16
+    BATCH_SIZE = 8
     NUM_EPOCHS = 150
-    NUM_WORKERS = 0
+    NUM_WORKERS = 4  # DataLoader workers
     
     # Optimizer settings
-    LEARNING_RATE = 0.003
+    LEARNING_RATE = 0.001
     WEIGHT_DECAY = 1e-4
     MOMENTUM = 0.9  # For SGD
     
     # Learning rate scheduler
     USE_SCHEDULER = True
     SCHEDULER_TYPE = 'plateau'  # 'plateau' or 'cosine'
-    SCHEDULER_PATIENCE = 8  # For ReduceLROnPlateau
+    SCHEDULER_PATIENCE = 10  # For ReduceLROnPlateau
     SCHEDULER_FACTOR = 0.5  # For ReduceLROnPlateau
     MIN_LR = 1e-6
     
     # CALLBACKS
     # Early stopping
     USE_EARLY_STOPPING = True
-    EARLY_STOPPING_PATIENCE = 10
+    EARLY_STOPPING_PATIENCE = 20
     EARLY_STOPPING_MIN_DELTA = 0.001
     
     # Model checkpointing
@@ -65,7 +66,7 @@ class Config:
     USE_AMP = True  # Automatic Mixed Precision for faster training
     
     # Class imbalance handling
-    USE_CLASS_WEIGHTS = False
+    USE_CLASS_WEIGHTS = True
     
     # Gradient clipping
     USE_GRAD_CLIP = True
@@ -76,11 +77,10 @@ class Config:
     TOP_K = [1, 5, 10]
     
     # Visualization
-    PLOT_FREQUENCY = 50  # Generate plots every N epochs
     PLOT_DPI = 200
     
     # ROC/AUC settings
-    MAX_CLASSES_FOR_ROC = 50  # Only plot ROC for top N classes
+    MAX_CLASSES_FOR_ROC = 50  # Only plot ROC for top N classes (too many classes = slow)
     
     # Confusion matrix
     CONFUSION_MATRIX_NORMALIZE = True
@@ -100,7 +100,6 @@ class Config:
     def print_config(cls):
         """Print current configuration"""
         print("CONFIGURATION")
-        print("="*60)
         print(f"Model Architecture: {cls.MODEL_ARCH.upper()}")
         print(f"Number of Classes: {cls.NUM_CLASSES}")
         print(f"Number of Frames: {cls.NUM_FRAMES}")
