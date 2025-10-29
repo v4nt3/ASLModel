@@ -23,7 +23,7 @@ def get_all_videos():
         videos = list(class_dir.glob("*.mp4"))
         for video in videos:
             all_videos.append({
-                "path": str(video.relative_to(DATASET_DIR.parent)),  
+                "path": str(video.relative_to(DATASET_DIR)),  
                 "label": class_dir.name
             })
     return all_videos
