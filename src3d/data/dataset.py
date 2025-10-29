@@ -19,6 +19,10 @@ class SignLanguageDataset(Dataset):
         with open(split_file, 'r') as f:
             self.data = json.load(f)
         
+        # Mapear las clases a índices
+        self.class_names = sorted(list({item['label'] for item in self.data}))
+        self.class2idx = {c: i for i, c in enumerate(self.class_names)}
+        
         if is_training:
             self.spatial_transform = A.Compose([
                 A.HorizontalFlip(p=0.5),
@@ -55,7 +59,10 @@ class SignLanguageDataset(Dataset):
         video_path = self.data_dir / video_path_str
         
         if 'label' in item:
-            label = item['label']
+            label_str = item['label']  # sigue siendo string
+            label_idx = self.class2idx[label_str]  # convertir a entero
+            
+
         elif 'class' in item:
             label = item['class']
         elif 'class_id' in item:
@@ -70,7 +77,7 @@ class SignLanguageDataset(Dataset):
             
             frames = torch.from_numpy(frames).permute(3, 0, 1, 2).float()
             
-            label = torch.tensor(label, dtype=torch.long)
+            label = torch.tensor(label_idx, dtype=torch.long)
             
             return frames, label
         except Exception as e:
