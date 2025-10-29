@@ -24,7 +24,7 @@ class SignLanguageDataset(Dataset):
                 A.HorizontalFlip(p=0.5),
                 A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.2, rotate_limit=15, p=0.5),
                 A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
-                A.GaussNoise(var_limit=(10.0, 50.0), p=0.3),
+                A.GaussNoise(p=0.3),  # Removed var_limit parameter
                 A.Resize(frame_size, frame_size),
                 A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ])
@@ -39,9 +39,32 @@ class SignLanguageDataset(Dataset):
     
     def __getitem__(self, idx):
         item = self.data[idx]
-        video_path_str = str(item['video_path']).replace('\\', '/')
+        
+        if 'video_path' in item:
+            video_path_str = str(item['video_path'])
+        elif 'path' in item:
+            video_path_str = str(item['path'])
+        elif 'video' in item:
+            video_path_str = str(item['video'])
+        else:
+            # Print the actual keys to help debug
+            print(f"\n[ERROR] Unknown JSON format. Available keys: {list(item.keys())}")
+            print(f"[ERROR] Sample item: {item}")
+            raise KeyError(f"Could not find video path key in item. Available keys: {list(item.keys())}")
+        
+        # Normalize path separators
+        video_path_str = video_path_str.replace('\\', '/')
         video_path = self.data_dir / video_path_str
-        label = item['label']
+        
+        # Get label
+        if 'label' in item:
+            label = item['label']
+        elif 'class' in item:
+            label = item['class']
+        elif 'class_id' in item:
+            label = item['class_id']
+        else:
+            raise KeyError(f"Could not find label key in item. Available keys: {list(item.keys())}")
         
         try:
             frames = self._load_video(video_path)
@@ -52,9 +75,9 @@ class SignLanguageDataset(Dataset):
             
             return frames, label
         except Exception as e:
-            print(f"\n Failed to load video: {video_path}")
-            print(f" Error: {str(e)}")
-            print(f" Skipping this sample and returning a dummy tensor")
+            print(f"\n[WARNING] Failed to load video: {video_path}")
+            print(f"[WARNING] Error: {str(e)}")
+            print(f"[WARNING] Skipping this sample and returning a dummy tensor")
             # Return a dummy tensor to avoid crashing
             dummy_frames = torch.zeros((3, self.num_frames, self.frame_size, self.frame_size))
             return dummy_frames, label
