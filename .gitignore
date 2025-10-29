@@ -1,5 +1,6 @@
 env/
-checkpoints/    
+checkpoints/ 
+data/dataset/
 
 *.h5
 *.pt

@@ -24,7 +24,7 @@ class Config:
     # Video processing
     NUM_FRAMES = 40
     FRAME_SIZE = 112
-    NUM_CLASSES = 2288
+    NUM_CLASSES = 2303
     
     # MODEL PARAMETERS
     # Model architecture: 'c3d', 'r3d', or 'i3d'
