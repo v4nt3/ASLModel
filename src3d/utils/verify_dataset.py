@@ -60,10 +60,19 @@ if duplicados_reales:
         print(f"   - {' | '.join(grupo)}")
     print()
 
+# Eliminar carpetas vacías o con un solo video
+for clase in vacias + una_sola:
+    ruta = os.path.join(DATASET_PATH, clase)
+    try:
+        os.system(f'rm -rf "{ruta}"')
+        print(f"Carpeta eliminada: {clase}")
+    except Exception as e:
+        print(f"No se pudo eliminar {clase}: {e}")
+
 # Guardar CSV
 df = pd.DataFrame(list(conteo.items()), columns=["Clase", "Cantidad_videos"])
 df = df.sort_values(by="Cantidad_videos", ascending=True)
 csv_path = os.path.join(DATASET_PATH, "reporte_clases.csv")
 df.to_csv(csv_path, index=False, encoding="utf-8-sig")
 
-print(f"Reporte guardado en: {csv_path}")
+print(f"\nReporte guardado en: {csv_path}")
