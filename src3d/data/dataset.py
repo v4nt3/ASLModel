@@ -24,7 +24,7 @@ class SignLanguageDataset(Dataset):
                 A.HorizontalFlip(p=0.5),
                 A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.2, rotate_limit=15, p=0.5),
                 A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
-                A.GaussNoise(p=0.3),  # Removed var_limit parameter
+                A.GaussNoise(p=0.3),
                 A.Resize(frame_size, frame_size),
                 A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ])
@@ -47,16 +47,13 @@ class SignLanguageDataset(Dataset):
         elif 'video' in item:
             video_path_str = str(item['video'])
         else:
-            # Print the actual keys to help debug
             print(f"\n[ERROR] Unknown JSON format. Available keys: {list(item.keys())}")
             print(f"[ERROR] Sample item: {item}")
             raise KeyError(f"Could not find video path key in item. Available keys: {list(item.keys())}")
         
-        # Normalize path separators
         video_path_str = video_path_str.replace('\\', '/')
         video_path = self.data_dir / video_path_str
         
-        # Get label
         if 'label' in item:
             label = item['label']
         elif 'class' in item:
@@ -73,27 +70,26 @@ class SignLanguageDataset(Dataset):
             
             frames = torch.from_numpy(frames).permute(3, 0, 1, 2).float()
             
+            label = torch.tensor(label, dtype=torch.long)
+            
             return frames, label
         except Exception as e:
-            print(f"\n Failed to load video: {video_path}")
-            print(f" Error: {str(e)}")
-            print(f" Skipping this sample and returning a dummy tensor")
-            # Return a dummy tensor to avoid crashing
+            print(f"\n[WARNING] Failed to load video: {video_path}")
+            print(f"[WARNING] Error: {str(e)}")
+            print(f"[WARNING] Skipping this sample and returning a dummy tensor")
             dummy_frames = torch.zeros((3, self.num_frames, self.frame_size, self.frame_size))
+            label = torch.tensor(label, dtype=torch.long)
             return dummy_frames, label
     
     def _load_video(self, video_path):
         video_path = Path(video_path)
         
-        # Check if file exists
         if not video_path.exists():
             raise ValueError(f"Video file does not exist: {video_path}")
         
-        # Check file size
         if video_path.stat().st_size == 0:
             raise ValueError(f"Video file is empty (0 bytes): {video_path}")
         
-        # Try to open video
         cap = cv2.VideoCapture(str(video_path))
         
         if not cap.isOpened():
@@ -125,12 +121,10 @@ class SignLanguageDataset(Dataset):
         num_frames_available = len(frames)
         
         if num_frames_available >= self.num_frames:
-            # Calculate center position
             center_idx = num_frames_available // 2
             start_idx = center_idx - (self.num_frames // 2)
             end_idx = start_idx + self.num_frames
             
-            # Ensure we don't go out of bounds
             if start_idx < 0:
                 start_idx = 0
                 end_idx = self.num_frames
@@ -138,16 +132,12 @@ class SignLanguageDataset(Dataset):
                 end_idx = num_frames_available
                 start_idx = end_idx - self.num_frames
             
-            # Extract center frames
             indices = list(range(start_idx, end_idx))
             sampled_frames = [frames[i] for i in indices]
         else:
-            # Video is shorter than required frames
-            # Use all available frames and pad with the last frame
             sampled_frames = frames.copy()
             last_frame = frames[-1]
             
-            # Pad with last frame until we reach num_frames
             frames_to_pad = self.num_frames - num_frames_available
             sampled_frames.extend([last_frame] * frames_to_pad)
         
