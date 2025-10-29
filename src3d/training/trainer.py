@@ -35,7 +35,7 @@ class Trainer:
         self.grad_clip = grad_clip
         
         # Initialize gradient scaler for mixed precision
-        self.scaler = GradScaler('cuda') if use_amp else None
+        self.scaler = GradScaler() if use_amp else None
         
     def train_epoch(self, epoch):
         """Train for one epoch"""
@@ -75,6 +75,15 @@ class Trainer:
                 self.scaler.update()
             else:
                 loss.backward()
+                # imprime grad norm para validar que no son cero
+                total_norm = 0.0
+                for p in self.model.parameters():
+                    if p.grad is not None:
+                        param_norm = p.grad.data.norm(2).item()
+                        total_norm += param_norm ** 2
+                total_norm = total_norm ** 0.5
+                print(f"[DEBUG] Grad norm: {total_norm:.6f}")
+
                 
                 # Gradient clipping
                 if self.grad_clip is not None:

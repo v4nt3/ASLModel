@@ -156,7 +156,7 @@ class ASLClassifierPreExtracted(nn.Module):
     def __init__(self,
                  num_classes: int = 2288,
                  feature_dim: int = 2048,
-                 refine_dim: int = 768,
+                 refine_dim: int = 512,
                  refine_hw: tuple = (8, 8),   # (H, W) para re-reshape
                  lstm_hidden_size: int = 768,
                  lstm_num_layers: int = 2,

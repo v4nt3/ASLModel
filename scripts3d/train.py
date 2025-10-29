@@ -35,17 +35,22 @@ def main():
         split_file=Config.OUTPUT_DIR / 'train.json',
         num_frames=Config.NUM_FRAMES,
         frame_size=Config.FRAME_SIZE,
-        is_training=True
+        is_training=True,
+        class2idx=None
     )
-    
+    global_class2idx = train_dataset.class2idx
     val_dataset = SignLanguageDataset(
         data_dir=Config.DATA_DIR,
         split_file=Config.OUTPUT_DIR / 'val.json',
         num_frames=Config.NUM_FRAMES,
         frame_size=Config.FRAME_SIZE,
-        is_training=False
+        is_training=False,
+        class2idx=global_class2idx
+
     )
-    
+
+   
+
     print(f"Train samples: {len(train_dataset)}")
     print(f"Val samples: {len(val_dataset)}\n")
     
@@ -69,11 +74,13 @@ def main():
     
     # Create model
     print(f"Creating {Config.MODEL_ARCH.upper()} model")
+    num_classes = len(global_class2idx)
     model = get_model(
         arch=Config.MODEL_ARCH,
-        num_classes=Config.NUM_CLASSES,
+        num_classes=num_classes,
         dropout=Config.DROPOUT
     )
+
     model = model.to(device)
     
     # Calculate class weights for imbalanced dataset

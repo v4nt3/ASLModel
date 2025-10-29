@@ -17,7 +17,7 @@ from src.data.data_loader import (
     create_dataloaders_from_features_lazy,
     create_dataloaders_from_consolidated
 )
-from src.models.asl_classifier import ASLClassifierPreExtracted
+from src.models.asl_classifier_cnn import ASLClassifierPreExtracted
 from src.training.trainer import Trainer
 from src.visualization.visualizer import AdvancedVisualizer
 

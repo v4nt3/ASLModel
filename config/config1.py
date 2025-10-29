@@ -45,9 +45,9 @@ class Config:
     
     
     # LSTM parameters    
-    LSTM_HIDDEN_SIZE = 768    
+    LSTM_HIDDEN_SIZE = 512    
     LSTM_NUM_LAYERS = 2 
-    LSTM_DROPOUT = 0.4    
+    LSTM_DROPOUT = 0.3    
     LSTM_BIDIRECTIONAL = True    
     USE_ATTENTION = True  
 
@@ -59,7 +59,7 @@ class Config:
     #  HIPERPARÁMETROS DE ENTRENAMIENTO     
     BATCH_SIZE = 64    
     NUM_EPOCHS = 200    
-    LEARNING_RATE = 5e-4 # Reducido para evitar inestabilidad    
+    LEARNING_RATE = 3e-4 # Reducido para evitar inestabilidad    
     WEIGHT_DECAY = 1e-4  # Learning rate scheduler    
     SCHEDULER_TYPE = "plateau"  # "cosine", "step", "plateau" - plateau es más estable    
     WARMUP_EPOCHS = 5    

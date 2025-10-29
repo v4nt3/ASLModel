@@ -6,7 +6,7 @@ class C3D(nn.Module):
     C3D (3D Convolutional Network)
     Simple but effective 3D CNN architecture
     """
-    def __init__(self, num_classes=2288, dropout=0.5, input_frames=40):
+    def __init__(self, num_classes=2303, dropout=0.5, input_frames=40):
         super(C3D, self).__init__()
         
         self.input_frames = input_frames

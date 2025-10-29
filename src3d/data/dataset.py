@@ -4,13 +4,14 @@ import cv2
 import numpy as np
 import json
 from pathlib import Path
-import albumentations as A
+import albumentations as A #type: ignore
 import os
 
 class SignLanguageDataset(Dataset):
     """Dataset for sign language video classification"""
     
-    def __init__(self, data_dir, split_file, num_frames=16, frame_size=112, is_training=True):
+    def __init__(self, data_dir, split_file, num_frames=40, frame_size=112, is_training=True, class2idx=None):
+        
         self.data_dir = Path(data_dir)
         self.num_frames = num_frames
         self.frame_size = frame_size
@@ -20,9 +21,16 @@ class SignLanguageDataset(Dataset):
             self.data = json.load(f)
         
         # Mapear las clases a índices
-        self.class_names = sorted(list({item['label'] for item in self.data}))
-        self.class2idx = {c: i for i, c in enumerate(self.class_names)}
-        
+        if class2idx is None:
+            self.class_names = sorted(list({item['label'] for item in self.data}))
+            self.class2idx = {c: i for i, c in enumerate(self.class_names)}
+        else:
+            self.class2idx = class2idx
+            # opcionalmente: build class_names from class2idx
+            self.class_names = [None] * len(class2idx)
+            for k, v in class2idx.items():
+                self.class_names[v] = k
+
         if is_training:
             self.spatial_transform = A.Compose([
                 A.HorizontalFlip(p=0.5),
@@ -44,12 +52,15 @@ class SignLanguageDataset(Dataset):
     def __getitem__(self, idx):
         item = self.data[idx]
         
-        if 'video_path' in item:
-            video_path_str = str(item['video_path'])
-        elif 'path' in item:
-            video_path_str = str(item['path'])
-        elif 'video' in item:
-            video_path_str = str(item['video'])
+        if 'label' in item:
+            label_str = item['label']
+            label_idx = self.class2idx[label_str]
+        elif 'class' in item:
+            label_str = item['class']
+            label_idx = self.class2idx[label_str]
+        elif 'class_id' in item:
+            # si class_id ya es indice numérico, asegúrate que esté dentro del rango
+            label_idx = int(item['class_id'])
         else:
             print(f"\n[ERROR] Unknown JSON format. Available keys: {list(item.keys())}")
             print(f"[ERROR] Sample item: {item}")
