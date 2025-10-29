@@ -1,164 +1,67 @@
-import torch
-from torch.utils.data import Dataset
-import cv2
-import numpy as np
+import os 
 import json
+import random
 from pathlib import Path
-import albumentations as A #type: ignore
-import os
+from sklearn.model_selection import train_test_split
 
-class SignLanguageDataset(Dataset):
-    """Dataset for sign language video classification"""
-    
-    def __init__(self, data_dir, split_file, num_frames=16, frame_size=112, is_training=True):
-        self.data_dir = Path(data_dir)
-        self.num_frames = num_frames
-        self.frame_size = frame_size
-        self.is_training = is_training
-        
-        with open(split_file, 'r') as f:
-            self.data = json.load(f)
-        
-        if is_training:
-            self.spatial_transform = A.Compose([
-                A.HorizontalFlip(p=0.5),
-                A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.2, rotate_limit=15, p=0.5),
-                A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
-                A.GaussNoise(p=0.3),  # Removed var_limit parameter
-                A.Resize(frame_size, frame_size),
-                A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ])
-        else:
-            self.spatial_transform = A.Compose([
-                A.Resize(frame_size, frame_size),
-                A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ])
-    
-    def __len__(self):
-        return len(self.data)
-    
-    def __getitem__(self, idx):
-        item = self.data[idx]
-        
-        if 'video_path' in item:
-            video_path_str = str(item['video_path'])
-        elif 'path' in item:
-            video_path_str = str(item['path'])
-        elif 'video' in item:
-            video_path_str = str(item['video'])
-        else:
-            # Print the actual keys to help debug
-            print(f"\n[ERROR] Unknown JSON format. Available keys: {list(item.keys())}")
-            print(f"[ERROR] Sample item: {item}")
-            raise KeyError(f"Could not find video path key in item. Available keys: {list(item.keys())}")
-        
-        # Normalize path separators
-        video_path_str = video_path_str.replace('\\', '/')
-        video_path = self.data_dir / video_path_str
-        
-        # Get label
-        if 'label' in item:
-            label = item['label']
-        elif 'class' in item:
-            label = item['class']
-        elif 'class_id' in item:
-            label = item['class_id']
-        else:
-            raise KeyError(f"Could not find label key in item. Available keys: {list(item.keys())}")
-        
-        try:
-            frames = self._load_video(video_path)
-            frames = self._sample_frames(frames)
-            frames = self._apply_transforms(frames)
-            
-            frames = torch.from_numpy(frames).permute(3, 0, 1, 2).float()
-            
-            return frames, label
-        except Exception as e:
-            print(f"\n[WARNING] Failed to load video: {video_path}")
-            print(f"[WARNING] Error: {str(e)}")
-            print(f"[WARNING] Skipping this sample and returning a dummy tensor")
-            # Return a dummy tensor to avoid crashing
-            dummy_frames = torch.zeros((3, self.num_frames, self.frame_size, self.frame_size))
-            return dummy_frames, label
-    
-    def _load_video(self, video_path):
-        video_path = Path(video_path)
-        
-        # Check if file exists
-        if not video_path.exists():
-            raise ValueError(f"Video file does not exist: {video_path}")
-        
-        # Check file size
-        if video_path.stat().st_size == 0:
-            raise ValueError(f"Video file is empty (0 bytes): {video_path}")
-        
-        # Try to open video
-        cap = cv2.VideoCapture(str(video_path))
-        
-        if not cap.isOpened():
-            raise ValueError(f"OpenCV could not open video file: {video_path}")
-        
-        frames = []
-        frame_count = 0
-        
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frames.append(frame)
-            frame_count += 1
-        
-        cap.release()
-        
-        if len(frames) == 0:
-            raise ValueError(f"No frames extracted from video: {video_path}")
-        
-        return frames
-    
-    def _sample_frames(self, frames):
-        """
-        Extract frames from the center of the video.
-        If video has fewer frames than needed, pad by repeating the last frame.
-        """
-        num_frames_available = len(frames)
-        
-        if num_frames_available >= self.num_frames:
-            # Calculate center position
-            center_idx = num_frames_available // 2
-            start_idx = center_idx - (self.num_frames // 2)
-            end_idx = start_idx + self.num_frames
-            
-            # Ensure we don't go out of bounds
-            if start_idx < 0:
-                start_idx = 0
-                end_idx = self.num_frames
-            elif end_idx > num_frames_available:
-                end_idx = num_frames_available
-                start_idx = end_idx - self.num_frames
-            
-            # Extract center frames
-            indices = list(range(start_idx, end_idx))
-            sampled_frames = [frames[i] for i in indices]
-        else:
-            # Video is shorter than required frames
-            # Use all available frames and pad with the last frame
-            sampled_frames = frames.copy()
-            last_frame = frames[-1]
-            
-            # Pad with last frame until we reach num_frames
-            frames_to_pad = self.num_frames - num_frames_available
-            sampled_frames.extend([last_frame] * frames_to_pad)
-        
-        return sampled_frames
-    
-    def _apply_transforms(self, frames):
-        transformed_frames = []
-        
-        for frame in frames:
-            transformed = self.spatial_transform(image=frame)
-            transformed_frames.append(transformed['image'])
-        
-        transformed_frames = np.stack(transformed_frames, axis=0)
-        return transformed_frames
+# Ruta base del dataset
+DATASET_DIR = Path("data/dataset")
+OUTPUT_DIR = Path("data")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# Porcentajes
+TRAIN_SPLIT = 0.7
+VAL_SPLIT = 0.15
+TEST_SPLIT = 0.15
+
+def get_all_videos():
+    """Recorre todas las carpetas de clases y retorna lista (video_path, class_name)"""
+    all_videos = []
+    for class_dir in DATASET_DIR.iterdir():
+        if not class_dir.is_dir():
+            continue
+        videos = list(class_dir.glob("*.mp4"))
+        for video in videos:
+            all_videos.append({
+                "path": str(video.relative_to(DATASET_DIR)), 
+                "label": class_dir.name
+            })
+    return all_videos
+
+def split_dataset(videos):
+    """Divide dataset en train, val y test con proporciones 70/15/15"""
+    random.shuffle(videos)
+    labels = [v["label"] for v in videos]
+
+    train_videos, temp_videos = train_test_split(videos, test_size=(1 - TRAIN_SPLIT), stratify=labels)
+    val_videos, test_videos = train_test_split(
+        temp_videos, 
+        test_size=TEST_SPLIT / (TEST_SPLIT + VAL_SPLIT),
+        stratify=[v["label"] for v in temp_videos]
+    )
+
+    return train_videos, val_videos, test_videos
+
+def save_json(data, filename):
+    with open(OUTPUT_DIR / filename, "w") as f:
+        json.dump(data, f, indent=2)
+    print(f"{filename} creado con {len(data)} muestras")
+
+def main():
+    print("Recorriendo dataset...")
+    all_videos = get_all_videos()
+    print(f"Total de videos encontrados: {len(all_videos)}")
+
+    print("Dividiendo dataset en train/val/test...")
+    train_data, val_data, test_data = split_dataset(all_videos)
+
+    print("Guardando archivos JSON...")
+    save_json(train_data, "train.json")
+    save_json(val_data, "val.json")
+    save_json(test_data, "test.json")
+
+    print("\nDivisión completada correctamente!")
+    print(f"Train: {len(train_data)} | Val: {len(val_data)} | Test: {len(test_data)}")
+
+if __name__ == "__main__":
+    main()
