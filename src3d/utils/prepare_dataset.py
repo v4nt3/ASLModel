@@ -2,11 +2,10 @@ import os
 import shutil
 import re
 
-DATASET_PATH = "data/videos"  # ajustar
-DATASET_PATH_DES = "data"
+DATASET_PATH = "data/dataset"  # ajustar
 
 # Crear una carpeta destino 
-DEST_PATH = os.path.join(DATASET_PATH_DES, "dataset")
+DEST_PATH = os.path.join(DATASET_PATH, "dataset")
 os.makedirs(DEST_PATH, exist_ok=True)
 
 # Obtener todos los archivos de video
