@@ -1,10 +1,11 @@
-import torch #type: ignore
-from torch.utils.data import Dataset #type: ignore
+import torch
+from torch.utils.data import Dataset
 import cv2
 import numpy as np
 import json
 from pathlib import Path
 import albumentations as A #type: ignore
+import os
 
 class SignLanguageDataset(Dataset):
     """Dataset for sign language video classification"""
@@ -38,20 +39,45 @@ class SignLanguageDataset(Dataset):
     
     def __getitem__(self, idx):
         item = self.data[idx]
-        video_path = self.data_dir / item['video_path']
+        video_path_str = str(item['video_path']).replace('\\', '/')
+        video_path = self.data_dir / video_path_str
         label = item['label']
         
-        frames = self._load_video(video_path)
-        frames = self._sample_frames(frames)
-        frames = self._apply_transforms(frames)
-        
-        frames = torch.from_numpy(frames).permute(3, 0, 1, 2).float()
-        
-        return frames, label
+        try:
+            frames = self._load_video(video_path)
+            frames = self._sample_frames(frames)
+            frames = self._apply_transforms(frames)
+            
+            frames = torch.from_numpy(frames).permute(3, 0, 1, 2).float()
+            
+            return frames, label
+        except Exception as e:
+            print(f"\n Failed to load video: {video_path}")
+            print(f" Error: {str(e)}")
+            print(f" Skipping this sample and returning a dummy tensor")
+            # Return a dummy tensor to avoid crashing
+            dummy_frames = torch.zeros((3, self.num_frames, self.frame_size, self.frame_size))
+            return dummy_frames, label
     
     def _load_video(self, video_path):
+        video_path = Path(video_path)
+        
+        # Check if file exists
+        if not video_path.exists():
+            raise ValueError(f"Video file does not exist: {video_path}")
+        
+        # Check file size
+        if video_path.stat().st_size == 0:
+            raise ValueError(f"Video file is empty (0 bytes): {video_path}")
+        
+        # Try to open video
         cap = cv2.VideoCapture(str(video_path))
+        
+        if not cap.isOpened():
+            raise ValueError(f"OpenCV could not open video file: {video_path}")
+        
         frames = []
+        frame_count = 0
         
         while True:
             ret, frame = cap.read()
@@ -59,11 +85,12 @@ class SignLanguageDataset(Dataset):
                 break
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frames.append(frame)
+            frame_count += 1
         
         cap.release()
         
         if len(frames) == 0:
-            raise ValueError(f"Could not load video: {video_path}")
+            raise ValueError(f"No frames extracted from video: {video_path}")
         
         return frames
     

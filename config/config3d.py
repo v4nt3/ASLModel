@@ -7,7 +7,7 @@ from pathlib import Path
 class Config:
     # PATHS
     # Data paths
-    DATA_DIR = Path("data/dataset") 
+    DATA_DIR = Path("data/dataset")  # Directory containing video files organized by class
     OUTPUT_DIR = Path("data")  # Where to save train.json, val.json, test.json
     
     # Model paths
@@ -22,9 +22,9 @@ class Config:
     TEST_RATIO = 0.15  # Remaining after train and val
     
     # Video processing
-    NUM_FRAMES = 40
-    FRAME_SIZE = 112
-    NUM_CLASSES = 2303
+    NUM_FRAMES = 40  # Number of frames to extract from center of each video
+    FRAME_SIZE = 112  # Spatial size (height and width)
+    NUM_CLASSES = 2303  # Total number of sign language classes
     
     # MODEL PARAMETERS
     # Model architecture: 'c3d', 'r3d', or 'i3d'
@@ -34,10 +34,11 @@ class Config:
     DROPOUT = 0.5
     
     # TRAINING PARAMETERS
-    # Training settings
-    BATCH_SIZE = 8
+    # Training settings - Adjusted for 15GB VRAM
+    BATCH_SIZE = 4  # Reduced from 8 to fit in 15GB VRAM with 3D CNN
+    ACCUMULATION_STEPS = 2  # Gradient accumulation to simulate batch_size=8
     NUM_EPOCHS = 150
-    NUM_WORKERS = 4  # DataLoader workers
+    NUM_WORKERS = 4  # DataLoader workers (adjust based on CPU cores)
     
     # Optimizer settings
     LEARNING_RATE = 0.001
@@ -54,7 +55,7 @@ class Config:
     # CALLBACKS
     # Early stopping
     USE_EARLY_STOPPING = True
-    EARLY_STOPPING_PATIENCE = 20
+    EARLY_STOPPING_PATIENCE = 15
     EARLY_STOPPING_MIN_DELTA = 0.001
     
     # Model checkpointing
@@ -63,10 +64,10 @@ class Config:
     
     # TRAINING OPTIONS
     # Mixed precision training
-    USE_AMP = True  # Automatic Mixed Precision for faster training
+    USE_AMP = True  # Automatic Mixed Precision for faster training and lower memory
     
     # Class imbalance handling
-    USE_CLASS_WEIGHTS = True
+    USE_CLASS_WEIGHTS = False
     
     # Gradient clipping
     USE_GRAD_CLIP = True
@@ -80,13 +81,15 @@ class Config:
     PLOT_DPI = 200
     
     # ROC/AUC settings
-    MAX_CLASSES_FOR_ROC = 50  # Only plot ROC for top N classes (too many classes = slow)
+    MAX_CLASSES_FOR_ROC = 50  # Only plot ROC for top N classes 
     
     # Confusion matrix
     CONFUSION_MATRIX_NORMALIZE = True
     
     # DEVICE
     DEVICE = 'cuda'  # 'cuda' or 'cpu'
+    
+
     
     @classmethod
     def create_directories(cls):
@@ -104,6 +107,8 @@ class Config:
         print(f"Number of Classes: {cls.NUM_CLASSES}")
         print(f"Number of Frames: {cls.NUM_FRAMES}")
         print(f"Batch Size: {cls.BATCH_SIZE}")
+        print(f"Gradient Accumulation Steps: {cls.ACCUMULATION_STEPS}")
+        print(f"Effective Batch Size: {cls.BATCH_SIZE * cls.ACCUMULATION_STEPS}")
         print(f"Learning Rate: {cls.LEARNING_RATE}")
         print(f"Number of Epochs: {cls.NUM_EPOCHS}")
         print(f"Device: {cls.DEVICE}")

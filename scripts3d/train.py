@@ -49,6 +49,7 @@ def main():
     print(f"Train samples: {len(train_dataset)}")
     print(f"Val samples: {len(val_dataset)}\n")
     
+    
     # Create data loaders
     train_loader = DataLoader(
         train_dataset,
@@ -208,20 +209,26 @@ def main():
     
     
     print("GENERATING FINAL VISUALIZATIONS")
-
-    print("Generating training history with overfitting analysis")
+    
+    
+    print("\nGenerating training history with overfitting analysis")
     plot_training_history(history, Config.PLOTS_DIR)
     
     # Save final history
     with open(Config.RESULTS_DIR / 'training_history.json', 'w') as f:
         json.dump(history, f, indent=2)
     
-    print(f"\nTraining completed!")
+    print(f"TRAINING COMPLETED!")
     print(f"Best validation accuracy: {best_acc:.2f}%")
     print(f"Checkpoints saved to: {Config.CHECKPOINT_DIR}")
     print(f"Plots saved to: {Config.PLOTS_DIR}")
-    print(f"\nTo generate comprehensive evaluation metrics (ROC, AUC, Confusion Matrix, etc.),")
-    print(f"run: python scripts/evaluate.py")
+    print(f"\nTo generate comprehensive evaluation metrics:")
+    print(f"  - ROC curves with AUC scores")
+    print(f"  - Confusion matrices")
+    print(f"  - Precision-Recall curves")
+    print(f"  - Top-K accuracy analysis")
+    print(f"  - Per-class performance")
+    print(f"\nRun: python scripts/evaluate.py")
 
 if __name__ == '__main__':
     main()

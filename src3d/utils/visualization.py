@@ -19,6 +19,8 @@ def plot_training_history(history, save_dir):
     Plot training and validation loss/accuracy over epochs.
     Detects overfitting by showing the gap between train and val metrics.
     """
+    print("\n Generating training history plot...")
+    
     save_dir = Path(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
     
@@ -70,13 +72,16 @@ def plot_training_history(history, save_dir):
     plt.savefig(save_dir / 'training_history.png', bbox_inches='tight')
     plt.close()
     
-    print(f"Training history plot saved to {save_dir / 'training_history.png'}")
+    print(f" ✓ Training history plot saved to {save_dir / 'training_history.png'}")
 
 
 def plot_confusion_matrix(y_true, y_pred, class_names, save_dir, normalize=False, top_k=50):
     """
     Plot confusion matrix. For large number of classes, shows top-k most confused classes.
     """
+    matrix_type = "normalized" if normalize else "raw"
+    print(f"\n Generating {matrix_type} confusion matrix...")
+    
     save_dir = Path(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
     
@@ -125,13 +130,15 @@ def plot_confusion_matrix(y_true, y_pred, class_names, save_dir, normalize=False
     plt.savefig(save_dir / filename, bbox_inches='tight')
     plt.close()
     
-    print(f"Confusion matrix saved to {save_dir / filename}")
+    print(f" ✓ Confusion matrix saved to {save_dir / filename}")
 
 
 def plot_roc_curves(y_true, y_probs, num_classes, save_dir, max_classes_to_plot=10):
     """
     Plot ROC curves with AUC scores. For many classes, shows micro/macro average and sample of individual classes.
     """
+    print(f"\n Generating ROC curves with AUC scores...")
+    
     save_dir = Path(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
     
@@ -216,16 +223,18 @@ def plot_roc_curves(y_true, y_probs, num_classes, save_dir, max_classes_to_plot=
     with open(save_dir / 'auc_scores.json', 'w') as f:
         json.dump(auc_scores, f, indent=2)
     
-    print(f"ROC curves saved to {save_dir / 'roc_curves.png'}")
-    print(f"AUC scores saved to {save_dir / 'auc_scores.json'}")
-    print(f"Micro-average AUC: {roc_auc['micro']:.4f}")
-    print(f"Macro-average AUC: {roc_auc['macro']:.4f}")
+    print(f" ✓ ROC curves saved to {save_dir / 'roc_curves.png'}")
+    print(f" ✓ AUC scores saved to {save_dir / 'auc_scores.json'}")
+    print(f"   - Micro-average AUC: {roc_auc['micro']:.4f}")
+    print(f"   - Macro-average AUC: {roc_auc['macro']:.4f}")
 
 
 def plot_precision_recall_curves(y_true, y_probs, num_classes, save_dir, max_classes_to_plot=10):
     """
     Plot Precision-Recall curves with Average Precision scores.
     """
+    print(f"\n Generating Precision-Recall curves...")
+    
     save_dir = Path(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
     
@@ -290,15 +299,17 @@ def plot_precision_recall_curves(y_true, y_probs, num_classes, save_dir, max_cla
     plt.savefig(save_dir / 'precision_recall_curves.png', bbox_inches='tight')
     plt.close()
     
-    print(f"Precision-Recall curves saved to {save_dir / 'precision_recall_curves.png'}")
-    print(f"Micro-average AP: {avg_precision['micro']:.4f}")
-    print(f"Macro-average AP: {avg_precision['macro']:.4f}")
+    print(f" ✓ Precision-Recall curves saved to {save_dir / 'precision_recall_curves.png'}")
+    print(f"   - Micro-average AP: {avg_precision['micro']:.4f}")
+    print(f"   - Macro-average AP: {avg_precision['macro']:.4f}")
 
 
 def plot_top_k_accuracy(y_true, y_probs, save_dir, max_k=10):
     """
     Plot Top-K accuracy for different values of K.
     """
+    print(f"\n Generating Top-K accuracy analysis...")
+    
     save_dir = Path(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
     
@@ -328,17 +339,19 @@ def plot_top_k_accuracy(y_true, y_probs, save_dir, max_k=10):
     plt.savefig(save_dir / 'top_k_accuracy.png', bbox_inches='tight')
     plt.close()
     
-    print(f"Top-K accuracy plot saved to {save_dir / 'top_k_accuracy.png'}")
+    print(f" ✓ Top-K accuracy plot saved to {save_dir / 'top_k_accuracy.png'}")
     
     # Print top-k accuracies
     for k, acc in zip(k_values, top_k_accs):
-        print(f"Top-{k} Accuracy: {acc:.2f}%")
+        print(f"   - Top-{k} Accuracy: {acc:.2f}%")
 
 
 def plot_class_performance(y_true, y_pred, class_names, save_dir, top_n=20, bottom_n=20):
     """
     Plot per-class accuracy showing best and worst performing classes.
     """
+    print(f"\n Generating per-class performance analysis...")
+    
     save_dir = Path(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
     
@@ -390,7 +403,7 @@ def plot_class_performance(y_true, y_pred, class_names, save_dir, top_n=20, bott
     plt.savefig(save_dir / 'class_performance.png', bbox_inches='tight')
     plt.close()
     
-    print(f"Class performance plot saved to {save_dir / 'class_performance.png'}")
+    print(f" ✓ Class performance plot saved to {save_dir / 'class_performance.png'}")
     
     # Save detailed class performance to JSON
     class_performance = {
@@ -405,7 +418,7 @@ def plot_class_performance(y_true, y_pred, class_names, save_dir, top_n=20, bott
     with open(save_dir / 'class_performance.json', 'w') as f:
         json.dump(class_performance, f, indent=2)
     
-    print(f"Class performance details saved to {save_dir / 'class_performance.json'}")
+    print(f" ✓ Class performance details saved to {save_dir / 'class_performance.json'}")
 
 
 def generate_all_visualizations(y_true, y_pred, y_probs, class_names, history, save_dir):
@@ -415,36 +428,33 @@ def generate_all_visualizations(y_true, y_pred, y_probs, class_names, history, s
     save_dir = Path(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
     
-    print("\n" + "="*60)
-    print("Generating Visualizations")
-    print("="*60)
+    print("GENERATING ALL VISUALIZATIONS")
     
     # Training history
     if history is not None:
-        print("\n[1/7] Plotting training history...")
+        print("\n[1/7] Training History Plot")
         plot_training_history(history, save_dir)
     
     # Confusion matrices
-    print("\n[2/7] Plotting confusion matrices...")
+    print("\n[2/7] Confusion Matrices")
     plot_confusion_matrix(y_true, y_pred, class_names, save_dir, normalize=False)
     plot_confusion_matrix(y_true, y_pred, class_names, save_dir, normalize=True)
     
     # ROC curves
-    print("\n[3/7] Plotting ROC curves...")
+    print("\n[3/7] ROC Curves with AUC")
     plot_roc_curves(y_true, y_probs, len(class_names), save_dir)
     
     # Precision-Recall curves
-    print("\n[4/7] Plotting Precision-Recall curves...")
+    print("\n[4/7] Precision-Recall Curves")
     plot_precision_recall_curves(y_true, y_probs, len(class_names), save_dir)
     
     # Top-K accuracy
-    print("\n[5/7] Plotting Top-K accuracy...")
+    print("\n[5/7] Top-K Accuracy Analysis")
     plot_top_k_accuracy(y_true, y_probs, save_dir)
     
     # Class performance
-    print("\n[6/7] Plotting class performance...")
+    print("\n[6/7] Per-Class Performance Analysis")
     plot_class_performance(y_true, y_pred, class_names, save_dir)
     
-    print("\n[7/7] All visualizations complete!")
+    print("\n[7/7] ✓ All visualizations complete!")
     print(f"\nAll plots saved to: {save_dir}")
-    print("="*60 + "\n")
