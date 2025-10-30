@@ -167,7 +167,7 @@ def main():
     print("\nStarting training\n")
     for epoch in range(1, Config.NUM_EPOCHS + 1):
         # Train
-        train_loss, train_acc, _ = trainer.train_epoch(epoch)
+        train_loss, train_acc, _ = trainer.train_one_epoch(epoch)
         
         # Validate
         val_loss, val_acc, _ = trainer.validate(epoch)
