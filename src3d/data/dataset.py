@@ -3,7 +3,7 @@
 import json
 import os
 from pathlib import Path
-import random
+from PIL import Image
 import torch
 from torch.utils.data import Dataset
 import numpy as np
@@ -52,7 +52,6 @@ class SignLanguageDataset(Dataset):
         if self.transform is None:
             self.transform = transforms.Compose([
                 transforms.ToTensor(),            # -> [C, H, W], float [0,1]
-                transforms.Resize((frame_size, frame_size))  # si usas PIL frames
             ])
 
     def __len__(self):
@@ -114,13 +113,14 @@ class SignLanguageDataset(Dataset):
         # aplicar transform individual por frame y apilar en tensor  [C, T, H, W]
         processed = []
         for f in frames:
-            if isinstance(f, np.ndarray):
-                # convertir a PIL si tu transform espera PIL, o convertir directamente
-                f_t = torch.from_numpy(f).permute(2, 0, 1).float() / 255.0  # [C,H,W]
+            # f es numpy array HxWxC (uint8) y ya está redimensionado en _read_video_frames
+            if self.transform is not None:
+                # ToTensor acepta numpy arrays HxWxC
+                f_t = self.transform(f)  # -> [C, H, W], float 0..1
             else:
-                f_t = self.transform(f)  # assume transform -> tensor [C,H,W]
+                f_t = torch.from_numpy(f).permute(2, 0, 1).float() / 255.0
             processed.append(f_t)
-
+            
         # apilar: list de [C,H,W] -> tensor [C, T, H, W]
         video_tensor = torch.stack(processed, dim=1)  # dim=1 -> time dimension
 
@@ -134,13 +134,12 @@ class SignLanguageDataset(Dataset):
         return video_tensor, label_tensor
 
     def _read_frame(self, path):
-        # ejemplo simple usando PIL
-        from PIL import Image
+        """
+        Leer un frame individual (usado si trabajas con carpetas de frames).
+        Devuelve un numpy array RGB HxWxC (uint8).
+        """
         img = Image.open(path).convert('RGB')
-        if self.transform is not None:
-            return self.transform(img)
-        return img
-
+        return np.array(img)
     
 
     def _read_video_frames(self, video_path):
@@ -162,6 +161,8 @@ class SignLanguageDataset(Dataset):
                 break
             # OpenCV lee en BGR -> convertir a RGB
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = cv2.resize(frame, (self.frame_size, self.frame_size), interpolation=cv2.INTER_AREA)
+
             frames.append(frame)
         cap.release()
 
@@ -172,8 +173,8 @@ class SignLanguageDataset(Dataset):
 
     def _temporal_sample(self, frames, num_frames):
         """
-        frames: lista de PIL o numpy arrays
-        Devuelve exactamente num_frames seleccionados (padding o recorte).
+        frames: lista de numpy arrays (cada uno HxWxC), ya redimensionados
+        retorna exactamente num_frames frames (recorte uniforme o padding con el último)
         """
         T = len(frames)
         if T == 0:
@@ -181,12 +182,12 @@ class SignLanguageDataset(Dataset):
         if T == num_frames:
             return frames
         if T > num_frames:
-            # sample uniformemente
+            # sample uniformemente N indices del rango [0, T-1]
             indices = np.linspace(0, T - 1, num_frames).astype(int)
-            return [frames[i] for i in indices]
+            return [frames[int(i)] for i in indices]
         else:
-            # si hay menos frames, repetir últimos hasta completar
-            reps = frames.copy()
+            # si hay menos frames, repetir el último hasta alcanzar num_frames
+            reps = list(frames)
             while len(reps) < num_frames:
                 reps.append(frames[-1])
             return reps[:num_frames]
