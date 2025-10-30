@@ -43,6 +43,7 @@ class Trainer:
 
         start = time.time()
         for batch_idx, (videos, labels) in enumerate(dataloader):
+            total_norm = 0.0
             videos = videos.to(self.device, non_blocking=True)
             labels = labels.to(self.device, non_blocking=True)
 
@@ -75,7 +76,7 @@ class Trainer:
                     torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
 
                 # debug: calcular grad norm
-                total_norm = 0.0
+                
                 for p in self.model.parameters():
                     if p.grad is not None:
                         param_norm = p.grad.data.norm(2).item()
