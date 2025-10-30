@@ -13,11 +13,14 @@ import numpy as np
 
 class SignLanguageDataset(Dataset):
     def __init__(self, data_dir, split_file, num_frames=16, frame_size=112,
-                 is_training=True, class2idx: dict = None, transform=None):
+                 is_training=True, class2idx: dict = None, transform=None,
+                 motion_threshold=0.02, skip_initial_frames=0.15):
         """
         data_dir: carpeta base con secuencias/frames (si aplica)
         split_file: json con la lista de muestras
         class2idx: mapping global opcional {class_name: idx}. Si None, se construye desde el split_file.
+        motion_threshold: umbral para detectar inicio de movimiento (0.01-0.05 recomendado)
+        skip_initial_frames: porcentaje de frames iniciales a saltar antes de buscar movimiento (0.0-0.3)
         """
         self.data_dir = Path(data_dir)
         with open(split_file, 'r') as f:
@@ -47,6 +50,8 @@ class SignLanguageDataset(Dataset):
         self.frame_size = frame_size
         self.is_training = is_training
         self.transform = transform
+        self.motion_threshold = motion_threshold
+        self.skip_initial_frames = skip_initial_frames
 
         # transforms por defecto (puedes ajustar)
         if self.transform is None:
@@ -105,6 +110,8 @@ class SignLanguageDataset(Dataset):
                 frames = [self._read_frame(p) for p in frame_files]
             else:
                 raise KeyError("No video_path/frames/frames_dir found in item JSON.")
+
+        frames = self._detect_motion_start(frames)
 
         # frames -> numpy array shape (T, H, W, C) o lista de PIL images
         # reducir/expandir a self.num_frames
@@ -191,3 +198,53 @@ class SignLanguageDataset(Dataset):
             while len(reps) < num_frames:
                 reps.append(frames[-1])
             return reps[:num_frames]
+
+    def _detect_motion_start(self, frames):
+        """
+        Detecta el inicio del movimiento en la secuencia de frames y retorna
+        los frames desde ese punto en adelante.
+        
+        Estrategia:
+        1. Saltar un porcentaje inicial de frames (ej: 15%)
+        2. Calcular diferencias entre frames consecutivos
+        3. Cuando la diferencia supera un umbral, ese es el inicio de la seña
+        4. Retornar frames desde ese punto
+        
+        Si no se detecta movimiento significativo, retorna todos los frames.
+        """
+        if len(frames) < 3:
+            return frames
+        
+        # Saltar frames iniciales (ej: primeros 15%)
+        skip_count = int(len(frames) * self.skip_initial_frames)
+        start_idx = max(0, skip_count)
+        
+        # Convertir frames a escala de grises para análisis más rápido
+        gray_frames = []
+        for i in range(start_idx, len(frames)):
+            gray = cv2.cvtColor(frames[i], cv2.COLOR_RGB2GRAY)
+            # Reducir resolución para cálculo más rápido
+            gray = cv2.resize(gray, (56, 56))
+            gray_frames.append(gray.astype(np.float32) / 255.0)
+        
+        if len(gray_frames) < 2:
+            return frames
+        
+        # Calcular diferencias entre frames consecutivos
+        motion_detected_idx = None
+        for i in range(1, len(gray_frames)):
+            # Diferencia absoluta entre frames
+            diff = np.abs(gray_frames[i] - gray_frames[i-1])
+            motion_score = np.mean(diff)
+            
+            # Si el movimiento supera el umbral, este es el inicio
+            if motion_score > self.motion_threshold:
+                motion_detected_idx = start_idx + i - 1  # -1 para incluir el frame anterior
+                break
+        
+        # Si se detectó movimiento, retornar desde ese punto
+        if motion_detected_idx is not None and motion_detected_idx < len(frames):
+            return frames[motion_detected_idx:]
+        
+        # Si no se detectó movimiento significativo, retornar desde donde empezamos a buscar
+        return frames[start_idx:]

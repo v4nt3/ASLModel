@@ -25,20 +25,25 @@ class Config:
     NUM_FRAMES = 40  # Number of frames to extract from center of each video
     FRAME_SIZE = 112  # Spatial size (height and width)
     NUM_CLASSES = 2303  # Total number of sign language classes
+
+    # Motion detection parameters
+    MOTION_THRESHOLD = 0.02  # Umbral para detectar inicio de movimiento (0.01-0.05)
+    SKIP_INITIAL_FRAMES = 0.10  # Porcentaje de frames iniciales a saltar (0.0-0.3)
+    
     
     # MODEL PARAMETERS
     # Model architecture: 'c3d', 'r3d', or 'i3d'
-    MODEL_ARCH = 'c3d'
+    MODEL_ARCH = 'r3d'
     
     # Model hyperparameters
     DROPOUT = 0.5
     
     # TRAINING PARAMETERS
     # Training settings - Adjusted for 15GB VRAM
-    BATCH_SIZE = 4  # Reduced from 8 to fit in 15GB VRAM with 3D CNN
-    ACCUMULATION_STEPS = 2  # Gradient accumulation to simulate batch_size=8
+    BATCH_SIZE = 6  # Reduced from 8 to fit in 15GB VRAM with 3D CNN
+    ACCUMULATION_STEPS = 3  # Gradient accumulation to simulate batch_size=8
     NUM_EPOCHS = 150
-    NUM_WORKERS = 4  # DataLoader workers (adjust based on CPU cores)
+    NUM_WORKERS = 10  # DataLoader workers (adjust based on CPU cores)
     
     # Optimizer settings
     LEARNING_RATE = 0.001

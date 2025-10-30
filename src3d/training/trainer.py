@@ -47,7 +47,7 @@ class Trainer:
         progress_bar = tqdm(enumerate(dataloader), total=len(dataloader),
                         desc=f"Epoch {epoch_idx} [Train]", leave=True, dynamic_ncols=True)
 
-        for batch_idx, (videos, labels) in enumerate(dataloader):
+        for batch_idx, (videos, labels) in progress_bar:
             total_norm = 0.0
             videos = videos.to(self.device, non_blocking=True)
             labels = labels.to(self.device, non_blocking=True)
@@ -101,7 +101,6 @@ class Trainer:
                     pass
 
             # métricas
-            # accuracy devuelve porcentaje (ej: 12.34)
             prec1 = accuracy(outputs.detach(), labels, topk=(1,))[0].item()
             batch_size = labels.size(0)
             losses.update(loss.item() * self.accumulation_steps, batch_size)
@@ -109,15 +108,14 @@ class Trainer:
             total_samples += batch_size
 
             # logging por batch
-            progress_bar.update(1)
             progress_bar.set_postfix({
-            "loss": f"{losses.avg:.4f}",
-            "top1": f"{top1_meter.avg:.2f}%",
-            "grad_norm": f"{total_norm:.4f}"
-        })
+                "loss": f"{losses.avg:.4f}",
+                "top1": f"{top1_meter.avg:.2f}%",
+                "grad_norm": f"{total_norm:.4f}"
+            })
             
         epoch_loss = losses.avg
-        epoch_top1 = top1_meter.avg / 100.0  # convertir a fracción [0,1]
+        epoch_top1 = top1_meter.avg  # ya es porcentaje
         return epoch_loss, epoch_top1
 
     def validate(self, dataloader):
@@ -140,12 +138,11 @@ class Trainer:
                     outputs = self.model(videos)
                     loss = self.criterion(outputs, labels)
 
-
                 prec1 = accuracy(outputs, labels, topk=(1,))[0].item()
                 batch_size = labels.size(0)
                 losses.update(loss.item(), batch_size)
                 top1_meter.update(prec1, batch_size)
 
         epoch_loss = losses.avg
-        epoch_top1 = top1_meter.avg / 100.0
+        epoch_top1 = top1_meter.avg  # ya es porcentaje
         return epoch_loss, epoch_top1

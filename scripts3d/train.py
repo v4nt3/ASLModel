@@ -37,7 +37,9 @@ def main():
         num_frames=Config.NUM_FRAMES,
         frame_size=Config.FRAME_SIZE,
         is_training=True,
-        class2idx=None
+        class2idx=None,
+        motion_threshold=Config.MOTION_THRESHOLD,
+        skip_initial_frames=Config.SKIP_INITIAL_FRAMES
     )
 
     global_class2idx = train_dataset.class2idx
@@ -50,13 +52,13 @@ def main():
         num_frames=Config.NUM_FRAMES,
         frame_size=Config.FRAME_SIZE,
         is_training=False,
-        class2idx=global_class2idx
-
+        class2idx=global_class2idx,
+        motion_threshold=Config.MOTION_THRESHOLD,
+        skip_initial_frames=Config.SKIP_INITIAL_FRAMES
     )
 
     print(f"Train samples: {len(train_dataset)}")
     print(f"Val samples: {len(val_dataset)}\n")
-    
     
     # Create data loaders
     train_loader = DataLoader(
@@ -86,17 +88,18 @@ def main():
 
     model = model.to(device)
     
-    # Calculate class weights for imbalanced dataset
     if Config.USE_CLASS_WEIGHTS:
         print("\nCalculating class weights")
         class_weights = calculate_class_weights(
             Config.OUTPUT_DIR / 'train.json',
-            Config.NUM_CLASSES
+            global_class2idx  # pasar el mapping correcto
         )
         class_weights = torch.FloatTensor(class_weights).to(device)
         criterion = nn.CrossEntropyLoss(weight=class_weights)
+        print("Using weighted CrossEntropyLoss")
     else:
         criterion = nn.CrossEntropyLoss()
+        print("Using standard CrossEntropyLoss")
     
     # Create optimizer
     optimizer = torch.optim.Adam(
@@ -104,8 +107,6 @@ def main():
         lr=Config.LEARNING_RATE,
         weight_decay=Config.WEIGHT_DECAY
     )
-
-    criterion = torch.nn.CrossEntropyLoss()
     
     # Create callbacks
     callbacks = {}
@@ -123,8 +124,9 @@ def main():
         mode='max'
     )
     
+    scheduler_callback = None
     if Config.USE_SCHEDULER:
-        callbacks['scheduler'] = LearningRateScheduler(
+        scheduler_callback = LearningRateScheduler(
             optimizer,
             scheduler_type=Config.SCHEDULER_TYPE,
             mode='max',
@@ -133,8 +135,8 @@ def main():
             min_lr=Config.MIN_LR,
             T_max=Config.NUM_EPOCHS
         )
+        callbacks['scheduler'] = scheduler_callback
     
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # Create trainer
     trainer = Trainer(
         model=model,
@@ -157,19 +159,25 @@ def main():
     
     best_acc = 0.0
 
+    print("\nVerifying data shapes...")
     videos, labels = next(iter(train_loader))
-    print("DEBUG: videos.shape:", videos.shape)   # expected (B, C, T, H, W)
-    print("DEBUG: labels.unique():", torch.unique(labels))
-    assert num_classes >= int(labels.max().item()) + 1, f"num_classes ({num_classes}) < max_label+1 ({labels.max().item()+1})"
+    print(f"  Video batch shape: {videos.shape}")  # expected (B, C, T, H, W)
+    print(f"  Labels shape: {labels.shape}")
+    print(f"  Unique labels in batch: {torch.unique(labels).tolist()}")
+    print(f"  Label range: [{labels.min().item()}, {labels.max().item()}]")
+    assert num_classes > int(labels.max().item()), f"num_classes ({num_classes}) must be > max_label ({labels.max().item()})"
+    print("  ✓ Data verification passed\n")
 
     
     # Training loop
-    print("\nStarting training\n")
+    print("Starting training\n")
     for epoch in range(1, Config.NUM_EPOCHS + 1):
-        # Train
+        # Train - NO pasar scheduler aquí (se maneja después)
         train_loss, train_acc = trainer.train_one_epoch(train_loader, epoch, scheduler=None)
+        
         # Validate
         val_loss, val_acc = trainer.validate(val_loader)        
+        
         # Update history
         history['train_loss'].append(train_loss)
         history['train_acc'].append(train_acc)
@@ -177,7 +185,7 @@ def main():
         history['val_acc'].append(val_acc)
         
         if Config.USE_SCHEDULER:
-            current_lr = callbacks['scheduler'].get_last_lr()
+            current_lr = scheduler_callback.get_last_lr()
             history['lr'].append(current_lr)
         else:
             history['lr'].append(Config.LEARNING_RATE)
@@ -202,20 +210,20 @@ def main():
             'history': history,
             'config': {
                 'model_arch': Config.MODEL_ARCH,
-                'num_classes': Config.NUM_CLASSES,
+                'num_classes': num_classes,  # usar num_classes detectado
                 'num_frames': Config.NUM_FRAMES,
                 'frame_size': Config.FRAME_SIZE
             }
         }
         
         if Config.USE_SCHEDULER:
-            state['scheduler_state_dict'] = callbacks['scheduler'].scheduler.state_dict()
+            state['scheduler_state_dict'] = scheduler_callback.scheduler.state_dict()
         
         callbacks['checkpoint'].save(state, val_acc, epoch)
         
         # Update learning rate scheduler
         if Config.USE_SCHEDULER:
-            callbacks['scheduler'].step(val_acc)
+            scheduler_callback.step(val_acc)
         
         # Check early stopping
         if Config.USE_EARLY_STOPPING:
