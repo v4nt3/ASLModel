@@ -138,8 +138,6 @@ def main():
     # Create trainer
     trainer = Trainer(
         model=model,
-        train_loader=train_loader,
-        val_loader=val_loader,
         criterion=criterion,
         optimizer=optimizer,
         device=device,
