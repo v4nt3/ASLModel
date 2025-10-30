@@ -1,19 +1,14 @@
-"""
-Training logic for 3D CNN models
-"""
-import torch #type: ignore
-import torch.nn as nn #type: ignore
-from torch.amp import autocast, GradScaler #type: ignore
-from tqdm import tqdm #type: ignore
+# trainer.py -- Trainer integrado con metrics.py
+import torch
+import torch.nn as nn
+from torch.cuda.amp import autocast, GradScaler
+from src3d.utils.metrics import AverageMeter, accuracy  # asumimos que metrics.py está en la misma carpeta
 import time
 
-from src3d.utils.metrics import AverageMeter, accuracy
-
 class Trainer:
-    """Handles model training and validation"""
-    
-    def __init__(self, model, train_loader, val_loader, criterion, optimizer, 
-                 device, use_amp=True, grad_clip=None):
+    def __init__(self, model, optimizer, criterion, device, use_amp=True,
+                 accumulation_steps=1, grad_clip=None, log_every=100):
+        
         """
         Args:
             model: PyTorch model
@@ -25,128 +20,121 @@ class Trainer:
             use_amp: Use automatic mixed precision
             grad_clip: Gradient clipping value (None to disable)
         """
-        self.model = model
-        self.train_loader = train_loader
-        self.val_loader = val_loader
-        self.criterion = criterion
+         
+        self.model = model.to(device)
         self.optimizer = optimizer
+        self.criterion = criterion
         self.device = device
-        self.use_amp = use_amp
+        self.use_amp = use_amp and (device.type == 'cuda')
+        self.scaler = GradScaler() if self.use_amp else None
+        self.accumulation_steps = max(1, accumulation_steps)
         self.grad_clip = grad_clip
-        
-        # Initialize gradient scaler for mixed precision
-        self.scaler = GradScaler() if use_amp else None
-        
-    def train_epoch(self, epoch):
-        """Train for one epoch"""
+        self.log_every = log_every
+
+    def train_one_epoch(self, dataloader, epoch_idx, scheduler=None):
         self.model.train()
-        
         losses = AverageMeter()
-        top1 = AverageMeter()
-        top5 = AverageMeter()
-        
-        pbar = tqdm(self.train_loader, desc=f'Epoch {epoch} [Train]')
-        
-        for videos, labels in pbar:
-            videos = videos.to(self.device)
-            labels = labels.to(self.device)
-            
-            # Forward pass with mixed precision
+        top1_meter = AverageMeter()
+        total_samples = 0
+
+        device_type = 'cuda' if self.device.type == 'cuda' else 'cpu'
+        self.optimizer.zero_grad()
+
+        start = time.time()
+        for batch_idx, (videos, labels) in enumerate(dataloader):
+            videos = videos.to(self.device, non_blocking=True)
+            labels = labels.to(self.device, non_blocking=True)
+
+            # forward (AMP-aware)
             if self.use_amp:
-                with autocast('cuda'):
+                with autocast(device_type=device_type):
                     outputs = self.model(videos)
                     loss = self.criterion(outputs, labels)
             else:
                 outputs = self.model(videos)
                 loss = self.criterion(outputs, labels)
-            
-            # Backward pass
-            self.optimizer.zero_grad()
-            
+
+            # normalizar si se usan pasos de acumulación
+            loss = loss / self.accumulation_steps
+
+            # backward
             if self.use_amp:
                 self.scaler.scale(loss).backward()
-                
-                # Gradient clipping
-                if self.grad_clip is not None:
-                    self.scaler.unscale_(self.optimizer)
-                    nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
-                
-                self.scaler.step(self.optimizer)
-                self.scaler.update()
             else:
                 loss.backward()
-                # imprime grad norm para validar que no son cero
+
+            # solo hacer step cada accumulation_steps
+            if (batch_idx + 1) % self.accumulation_steps == 0:
+                # unscale antes de clippear si usamos AMP
+                if self.use_amp:
+                    self.scaler.unscale_(self.optimizer)
+
+                if self.grad_clip is not None:
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
+
+                # debug: calcular grad norm
                 total_norm = 0.0
                 for p in self.model.parameters():
                     if p.grad is not None:
                         param_norm = p.grad.data.norm(2).item()
                         total_norm += param_norm ** 2
                 total_norm = total_norm ** 0.5
-                print(f"[DEBUG] Grad norm: {total_norm:.6f}")
 
-                
-                # Gradient clipping
-                if self.grad_clip is not None:
-                    nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
-                
-                self.optimizer.step()
-            
-            # Measure accuracy
-            acc1, acc5 = accuracy(outputs, labels, topk=(1, 5))
-            
-            # Update metrics
-            batch_size = videos.size(0)
-            losses.update(loss.item(), batch_size)
-            top1.update(acc1.item(), batch_size)
-            top5.update(acc5.item(), batch_size)
-            
-            # Update progress bar
-            pbar.set_postfix({
-                'loss': f'{losses.avg:.4f}',
-                'top1': f'{top1.avg:.2f}%',
-                'top5': f'{top5.avg:.2f}%'
-            })
-        
-        return losses.avg, top1.avg, top5.avg
-    
-    def validate(self, epoch):
-        """Validate the model"""
-        self.model.eval()
-        
-        losses = AverageMeter()
-        top1 = AverageMeter()
-        top5 = AverageMeter()
-        
-        pbar = tqdm(self.val_loader, desc=f'Epoch {epoch} [Val]')
-        
-        with torch.no_grad():
-            for videos, labels in pbar:
-                videos = videos.to(self.device)
-                labels = labels.to(self.device)
-                
-                # Forward pass
                 if self.use_amp:
-                    with autocast('cuda'):
+                    self.scaler.step(self.optimizer)
+                    self.scaler.update()
+                else:
+                    self.optimizer.step()
+
+                self.optimizer.zero_grad()
+
+                if scheduler is not None:
+                    # scheduler.step() puede hacerse por epoch o por step según tu política
+                    pass
+
+            # métricas
+            # accuracy devuelve porcentaje (ej: 12.34)
+            prec1 = accuracy(outputs.detach(), labels, topk=(1,))[0].item()
+            batch_size = labels.size(0)
+            losses.update(loss.item() * self.accumulation_steps, batch_size)
+            top1_meter.update(prec1, batch_size)
+            total_samples += batch_size
+
+            # logging por batch
+            if batch_idx % self.log_every == 0:
+                elapsed = time.time() - start
+                print(f"Epoch[{epoch_idx}] Batch[{batch_idx}/{len(dataloader)}] "
+                      f"loss={losses.val:.4f} (avg={losses.avg:.4f}) top1={top1_meter.val:.2f}% (avg={top1_meter.avg:.2f}%) grad_norm={total_norm:.6f} elapsed={elapsed:.1f}s")
+
+        epoch_loss = losses.avg
+        epoch_top1 = top1_meter.avg / 100.0  # convertir a fracción [0,1]
+        return epoch_loss, epoch_top1
+
+    def validate(self, dataloader):
+        self.model.eval()
+
+        losses = AverageMeter()
+        top1_meter = AverageMeter()
+        device_type = 'cuda' if self.device.type == 'cuda' else 'cpu'
+
+        with torch.no_grad():
+            for videos, labels in dataloader:
+                videos = videos.to(self.device, non_blocking=True)
+                labels = labels.to(self.device, non_blocking=True)
+
+                if self.use_amp:
+                    with autocast(device_type=device_type):
                         outputs = self.model(videos)
                         loss = self.criterion(outputs, labels)
                 else:
                     outputs = self.model(videos)
                     loss = self.criterion(outputs, labels)
-                
-                # Measure accuracy
-                acc1, acc5 = accuracy(outputs, labels, topk=(1, 5))
-                
-                # Update metrics
-                batch_size = videos.size(0)
+
+                prec1 = accuracy(outputs, labels, topk=(1,))[0].item()
+                batch_size = labels.size(0)
                 losses.update(loss.item(), batch_size)
-                top1.update(acc1.item(), batch_size)
-                top5.update(acc5.item(), batch_size)
-                
-                # Update progress bar
-                pbar.set_postfix({
-                    'loss': f'{losses.avg:.4f}',
-                    'top1': f'{top1.avg:.2f}%',
-                    'top5': f'{top5.avg:.2f}%'
-                })
-        
-        return losses.avg, top1.avg, top5.avg
+                top1_meter.update(prec1, batch_size)
+
+        epoch_loss = losses.avg
+        epoch_top1 = top1_meter.avg / 100.0
+        return epoch_loss, epoch_top1

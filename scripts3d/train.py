@@ -30,6 +30,7 @@ def main():
     
     # Create datasets
     print("Loading datasets")
+
     train_dataset = SignLanguageDataset(
         data_dir=Config.DATA_DIR,
         split_file=Config.OUTPUT_DIR / 'train.json',
@@ -38,7 +39,11 @@ def main():
         is_training=True,
         class2idx=None
     )
+
     global_class2idx = train_dataset.class2idx
+    num_classes = len(global_class2idx)
+    print(f"Detected {num_classes} unique classes in training set")
+
     val_dataset = SignLanguageDataset(
         data_dir=Config.DATA_DIR,
         split_file=Config.OUTPUT_DIR / 'val.json',
@@ -74,7 +79,7 @@ def main():
     
     # Create model
     print(f"Creating {Config.MODEL_ARCH.upper()} model")
-    num_classes = len(global_class2idx)
+    
     model = get_model(
         arch=Config.MODEL_ARCH,
         num_classes=num_classes,
@@ -99,8 +104,11 @@ def main():
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=Config.LEARNING_RATE,
+        momentum=0.9,
         weight_decay=Config.WEIGHT_DECAY
     )
+
+    criterion = torch.nn.CrossEntropyLoss()
     
     # Create callbacks
     callbacks = {}
@@ -129,6 +137,7 @@ def main():
             T_max=Config.NUM_EPOCHS
         )
     
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # Create trainer
     trainer = Trainer(
         model=model,
@@ -138,6 +147,7 @@ def main():
         optimizer=optimizer,
         device=device,
         use_amp=Config.USE_AMP,
+        accumulation_steps=Config.ACCUMULATION_STEPS,
         grad_clip=Config.GRAD_CLIP_VALUE if Config.USE_GRAD_CLIP else None
     )
     
@@ -151,6 +161,12 @@ def main():
     }
     
     best_acc = 0.0
+
+    videos, labels = next(iter(train_loader))
+    print("DEBUG: videos.shape:", videos.shape)   # expected (B, C, T, H, W)
+    print("DEBUG: labels.unique():", torch.unique(labels))
+    assert num_classes >= int(labels.max().item()) + 1, f"num_classes ({num_classes}) < max_label+1 ({labels.max().item()+1})"
+
     
     # Training loop
     print("\nStarting training\n")
