@@ -5,6 +5,7 @@ from torch import amp
 from torch.cuda.amp import autocast, GradScaler
 from src3d.utils.metrics import AverageMeter, accuracy  # asumimos que metrics.py está en la misma carpeta
 import time
+import tqdm
 
 class Trainer:
     def __init__(self, model, optimizer, criterion, device, use_amp=True,
@@ -42,6 +43,9 @@ class Trainer:
         self.optimizer.zero_grad()
 
         start = time.time()
+        progress_bar = tqdm(enumerate(dataloader), total=len(dataloader),
+                        desc=f"Epoch {epoch_idx} [Train]", leave=True, dynamic_ncols=True)
+
         for batch_idx, (videos, labels) in enumerate(dataloader):
             total_norm = 0.0
             videos = videos.to(self.device, non_blocking=True)
@@ -104,11 +108,12 @@ class Trainer:
             total_samples += batch_size
 
             # logging por batch
-            if batch_idx % self.log_every == 0:
-                elapsed = time.time() - start
-                print(f"Epoch[{epoch_idx}] Batch[{batch_idx}/{len(dataloader)}] "
-                      f"loss={losses.val:.4f} (avg={losses.avg:.4f}) top1={top1_meter.val:.2f}% (avg={top1_meter.avg:.2f}%) grad_norm={total_norm:.6f} elapsed={elapsed:.1f}s")
-
+            progress_bar.set_postfix({
+            "loss": f"{losses.avg:.4f}",
+            "top1": f"{top1_meter.avg:.2f}%",
+            "grad_norm": f"{total_norm:.4f}"
+        })
+            
         epoch_loss = losses.avg
         epoch_top1 = top1_meter.avg / 100.0  # convertir a fracción [0,1]
         return epoch_loss, epoch_top1
