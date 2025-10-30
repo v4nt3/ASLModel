@@ -8,6 +8,8 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 from torchvision import transforms
+import cv2
+import numpy as np
 
 class SignLanguageDataset(Dataset):
     def __init__(self, data_dir, split_file, num_frames=16, frame_size=112,
@@ -131,7 +133,6 @@ class SignLanguageDataset(Dataset):
 
         return video_tensor, label_tensor
 
-    # --- helper functions que debes adaptar a tu flujo concreto ---
     def _read_frame(self, path):
         # ejemplo simple usando PIL
         from PIL import Image
@@ -140,11 +141,34 @@ class SignLanguageDataset(Dataset):
             return self.transform(img)
         return img
 
+    
+
     def _read_video_frames(self, video_path):
-        # Implementa lectura real (cv2.VideoCapture o decodificador)
-        # aquí devolvemos una lista vacía como placeholder para que no falle
-        # ----> Sustituye por tu lector real
-        raise NotImplementedError("Implement _read_video_frames with cv2 or decord according to your dataset.")
+        """
+        Lee un video .mp4 usando OpenCV y devuelve una lista de frames RGB (numpy arrays).
+        """
+        # Asegurarse de que existe el archivo
+        if not video_path.exists():
+            raise FileNotFoundError(f"Video not found: {video_path}")
+
+        cap = cv2.VideoCapture(str(video_path))
+        if not cap.isOpened():
+            raise IOError(f"Cannot open video file: {video_path}")
+
+        frames = []
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            # OpenCV lee en BGR -> convertir a RGB
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frames.append(frame)
+        cap.release()
+
+        if len(frames) == 0:
+            raise ValueError(f"Video {video_path} has 0 frames")
+
+        return frames
 
     def _temporal_sample(self, frames, num_frames):
         """
