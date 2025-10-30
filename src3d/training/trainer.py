@@ -133,12 +133,13 @@ class Trainer:
                 labels = labels.to(self.device, non_blocking=True)
 
                 if self.use_amp:
-                    with autocast(device_type=device_type):
+                    with torch.amp.autocast('cuda'):
                         outputs = self.model(videos)
                         loss = self.criterion(outputs, labels)
                 else:
                     outputs = self.model(videos)
                     loss = self.criterion(outputs, labels)
+
 
                 prec1 = accuracy(outputs, labels, topk=(1,))[0].item()
                 batch_size = labels.size(0)
