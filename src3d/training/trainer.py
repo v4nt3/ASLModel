@@ -109,6 +109,7 @@ class Trainer:
             total_samples += batch_size
 
             # logging por batch
+            progress_bar.update(1)
             progress_bar.set_postfix({
             "loss": f"{losses.avg:.4f}",
             "top1": f"{top1_meter.avg:.2f}%",
