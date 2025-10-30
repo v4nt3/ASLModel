@@ -5,7 +5,8 @@ from torch import amp
 from torch.cuda.amp import autocast, GradScaler
 from src3d.utils.metrics import AverageMeter, accuracy  # asumimos que metrics.py está en la misma carpeta
 import time
-import tqdm
+from tqdm import tqdm
+
 
 class Trainer:
     def __init__(self, model, optimizer, criterion, device, use_amp=True,
