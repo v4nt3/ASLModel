@@ -38,7 +38,7 @@ class Config:
     BATCH_SIZE = 4  # Reduced from 8 to fit in 15GB VRAM with 3D CNN
     ACCUMULATION_STEPS = 2  # Gradient accumulation to simulate batch_size=8
     NUM_EPOCHS = 150
-    NUM_WORKERS = 0  # DataLoader workers (adjust based on CPU cores)
+    NUM_WORKERS = 4  # DataLoader workers (adjust based on CPU cores)
     
     # Optimizer settings
     LEARNING_RATE = 0.001
