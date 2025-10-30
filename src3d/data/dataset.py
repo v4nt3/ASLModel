@@ -88,8 +88,8 @@ class SignLanguageDataset(Dataset):
         # --- Cargar frames/ vídeo ---
         # Este bloque asume que el JSON tiene una ruta en 'video_path' o 'frames'
         # Ajusta según tu dataset real.
-        if 'video_path' in item:
-            video_path = self.data_dir / item['video_path']
+        if 'path' in item:
+            video_path = self.data_dir / item['path']
             # aquí deberías implementar la lectura real de frames (cv2, decodificador, etc.)
             frames = self._read_video_frames(video_path)
         elif 'frames' in item:
