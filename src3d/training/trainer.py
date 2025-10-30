@@ -1,6 +1,7 @@
 # trainer.py -- Trainer integrado con metrics.py
 import torch
 import torch.nn as nn
+from torch import amp
 from torch.cuda.amp import autocast, GradScaler
 from src3d.utils.metrics import AverageMeter, accuracy  # asumimos que metrics.py está en la misma carpeta
 import time
@@ -47,12 +48,13 @@ class Trainer:
 
             # forward (AMP-aware)
             if self.use_amp:
-                with autocast(device_type=device_type):
+                with torch.amp.autocast('cuda'):
                     outputs = self.model(videos)
                     loss = self.criterion(outputs, labels)
             else:
                 outputs = self.model(videos)
                 loss = self.criterion(outputs, labels)
+
 
             # normalizar si se usan pasos de acumulación
             loss = loss / self.accumulation_steps
