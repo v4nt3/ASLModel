@@ -54,8 +54,6 @@ def main():
 
     )
 
-   
-
     print(f"Train samples: {len(train_dataset)}")
     print(f"Val samples: {len(val_dataset)}\n")
     
@@ -104,7 +102,6 @@ def main():
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=Config.LEARNING_RATE,
-        momentum=0.9,
         weight_decay=Config.WEIGHT_DECAY
     )
 
