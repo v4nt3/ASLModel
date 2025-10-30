@@ -167,11 +167,9 @@ def main():
     print("\nStarting training\n")
     for epoch in range(1, Config.NUM_EPOCHS + 1):
         # Train
-        train_loss, train_acc, _ = trainer.train_one_epoch(epoch)
-        
+        train_loss, train_acc = trainer.train_one_epoch(train_loader, epoch, scheduler=None)
         # Validate
-        val_loss, val_acc, _ = trainer.validate(epoch)
-        
+        val_loss, val_acc = trainer.validate(val_loader)        
         # Update history
         history['train_loss'].append(train_loss)
         history['train_acc'].append(train_acc)
