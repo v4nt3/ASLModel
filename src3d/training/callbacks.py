@@ -116,10 +116,42 @@ class ModelCheckpoint:
             best_path = self.checkpoint_dir / 'checkpoint_best.pth'
             
             torch.save(state, best_path)
-            print(f" Saved best model with score: {current_score:.4f}")
+            print(f"✓ Saved best model with score: {current_score:.4f}")
             return True
         
         return False
+
+
+class WarmupScheduler:
+    """
+    Learning rate warmup scheduler that gradually increases LR from warmup_start_lr to base_lr
+    """
+    def __init__(self, optimizer, warmup_epochs, warmup_start_lr, base_lr):
+        """
+        Args:
+            optimizer: PyTorch optimizer
+            warmup_epochs: Number of epochs for warmup
+            warmup_start_lr: Starting learning rate for warmup
+            base_lr: Target learning rate after warmup
+        """
+        self.optimizer = optimizer
+        self.warmup_epochs = warmup_epochs
+        self.warmup_start_lr = warmup_start_lr
+        self.base_lr = base_lr
+        self.current_epoch = 0
+        
+    def step(self):
+        """Update learning rate for warmup phase"""
+        if self.current_epoch < self.warmup_epochs:
+            # Linear warmup
+            lr = self.warmup_start_lr + (self.base_lr - self.warmup_start_lr) * (self.current_epoch / self.warmup_epochs)
+            for param_group in self.optimizer.param_groups:
+                param_group['lr'] = lr
+        self.current_epoch += 1
+        
+    def is_warmup_done(self):
+        """Check if warmup phase is complete"""
+        return self.current_epoch >= self.warmup_epochs
 
 
 class LearningRateScheduler:

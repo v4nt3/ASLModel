@@ -54,7 +54,7 @@ class I3D(nn.Module):
     I3D (Inflated 3D ConvNet)
     State-of-the-art architecture for video classification
     """
-    def __init__(self, num_classes=2288, dropout=0.5):
+    def __init__(self, num_classes=2303, dropout=0.5):
         super(I3D, self).__init__()
         
         
